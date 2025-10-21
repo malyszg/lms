@@ -133,6 +133,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Debug Docker username
+        run: |
+          echo "DOCKER_USERNAME from secret: '${{ secrets.DOCKER_USERNAME }}'"
+          echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "ERROR: DOCKER_USERNAME secret is empty!"
+            exit 1
+          fi
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -140,10 +151,12 @@ jobs:
           file: ./docker/Dockerfile.prod
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/lms:main
-            ${{ secrets.DOCKER_USERNAME }}/lms:latest
+            ${{ env.DOCKER_USERNAME }}/lms:main
+            ${{ env.DOCKER_USERNAME }}/lms:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
   security-scan:
     name: Security Scan
