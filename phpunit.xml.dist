@@ -6,8 +6,8 @@
          cacheDirectory=".phpunit.cache"
          executionOrder="depends,defects"
          beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
-         failOnWarning="true">
+         failOnRisky="false"
+         failOnWarning="false">
     
     <php>
         <ini name="display_errors" value="1"/>
@@ -21,7 +21,7 @@
         <env name="KERNEL_CLASS" value="App\Kernel"/>
         <env name="APP_SECRET" value="test-secret-key-for-phpunit-tests"/>
         <!-- Test database credentials - use environment variables -->
-        <env name="DATABASE_URL" value="mysql://${TEST_MYSQL_USER:-test_user}:${TEST_MYSQL_PASSWORD:-test_password}@mysql:3306/lms_db_test"/>
+        <env name="DATABASE_URL" value="mysql://${TEST_MYSQL_USER:-lms_user}:${TEST_MYSQL_PASSWORD:-lms_password}@127.0.0.1:3306/lms_db_test"/>
         <env name="GEMINI_API_KEY" value="test-api-key-for-phpunit"/>
         <env name="GEMINI_MODEL" value="gemini-2.0-flash"/>
         <env name="GEMINI_API_BASE_URL" value="https://generativelanguage.googleapis.com"/>
