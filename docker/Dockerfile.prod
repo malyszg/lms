@@ -1,21 +1,21 @@
 # Multi-stage build for production
-FROM php:8.3-fpm-alpine AS base
+FROM php:8.3-fpm AS base
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     libxml2-dev \
     libzip-dev \
     zip \
     unzip \
     librabbitmq-dev \
     libssl-dev \
-    icu-dev \
-    oniguruma-dev \
+    libicu-dev \
+    libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
@@ -27,13 +27,13 @@ RUN apk add --no-cache \
         zip \
         sockets \
         intl \
-        opcache
+        opcache \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install RabbitMQ extension
-RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && pecl install amqp \
-    && docker-php-ext-enable amqp \
-    && apk del .build-deps
+RUN pecl install amqp \
+    && docker-php-ext-enable amqp
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
