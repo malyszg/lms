@@ -26,15 +26,6 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-      
-      rabbitmq:
-        image: rabbitmq:3-management
-        env:
-          RABBITMQ_DEFAULT_USER: guest
-          RABBITMQ_DEFAULT_PASS: guest
-        ports:
-          - 5672:5672
-        options: --health-cmd="rabbitmq-diagnostics -q ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - name: Checkout code
@@ -73,13 +64,6 @@ jobs:
         run: |
           until mysqladmin ping -h"127.0.0.1" -P3306 -u"lms_user" -p"lms_password" --silent; do
             echo "Waiting for MySQL..."
-            sleep 2
-          done
-
-      - name: Wait for RabbitMQ
-        run: |
-          until rabbitmq-diagnostics -q ping; do
-            echo "Waiting for RabbitMQ..."
             sleep 2
           done
 
