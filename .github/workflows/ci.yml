@@ -68,8 +68,7 @@ jobs:
           done
 
       - name: Run database migrations
-        run: |
-          php bin/console doctrine:migrations:migrate --no-interaction --env=test
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
         env:
           APP_ENV: test
           DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
