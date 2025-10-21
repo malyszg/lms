@@ -79,7 +79,7 @@ jobs:
 
       - name: Run tests
         run: |
-          php bin/phpunit --coverage-text --coverage-clover=coverage.xml
+          vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
         env:
           APP_ENV: test
           DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
