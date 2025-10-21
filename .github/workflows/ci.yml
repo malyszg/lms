@@ -9,8 +9,6 @@ on:
 
 env:
   PHP_VERSION: '8.3'
-  MYSQL_VERSION: '9.4'
-  RABBITMQ_VERSION: '3-management'
 
 jobs:
   test:
@@ -19,7 +17,7 @@ jobs:
     
     services:
       mysql:
-        image: mysql:${{ env.MYSQL_VERSION }}
+        image: mysql:9.4
         env:
           MYSQL_ROOT_PASSWORD: root_password
           MYSQL_DATABASE: lms_db_test
@@ -30,7 +28,7 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
       
       rabbitmq:
-        image: rabbitmq:${{ env.RABBITMQ_VERSION }}
+        image: rabbitmq:3-management
         env:
           RABBITMQ_DEFAULT_USER: guest
           RABBITMQ_DEFAULT_PASS: guest
