@@ -60,7 +60,14 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        run: composer install --prefer-dist --no-progress
+        env:
+          APP_ENV: test
+          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
+          APP_SECRET: test-secret-key-for-ci
+          GEMINI_API_KEY: test-api-key-for-ci
+          GEMINI_MODEL: gemini-2.0-flash
+          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
 
       - name: Wait for MySQL
         run: |
@@ -162,7 +169,14 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, zip, bcmath, gd, sockets
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        run: composer install --prefer-dist --no-progress
+        env:
+          APP_ENV: test
+          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
+          APP_SECRET: test-secret-key-for-ci
+          GEMINI_API_KEY: test-api-key-for-ci
+          GEMINI_MODEL: gemini-2.0-flash
+          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
 
       - name: Run security audit
         run: composer audit --no-dev
