@@ -224,5 +224,12 @@ jobs:
           
           # Run PHP CS Fixer in dry-run mode
           ./vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+        env:
+          APP_ENV: test
+          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
+          APP_SECRET: test-secret-key-for-ci
+          GEMINI_API_KEY: test-api-key-for-ci
+          GEMINI_MODEL: gemini-2.0-flash
+          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
 
 
