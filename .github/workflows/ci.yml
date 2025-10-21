@@ -133,13 +133,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Verify Docker login
+        run: |
+          echo "Testing Docker Hub login..."
+          docker info | grep Username || echo "No username found in docker info"
+          echo "Docker login test completed."
+
       - name: Debug Docker username
         run: |
           echo "DOCKER_USERNAME from secret: '${{ secrets.DOCKER_USERNAME }}'"
           echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             echo "ERROR: DOCKER_USERNAME secret is empty!"
+            echo "Please check your GitHub repository secrets."
             exit 1
+          else
+            echo "DOCKER_USERNAME secret is not empty, proceeding with build."
           fi
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -151,12 +160,10 @@ jobs:
           file: ./docker/Dockerfile.prod
           push: true
           tags: |
-            ${{ env.DOCKER_USERNAME }}/lms:main
-            ${{ env.DOCKER_USERNAME }}/lms:latest
+            ${{ secrets.DOCKER_USERNAME }}/lms:main
+            ${{ secrets.DOCKER_USERNAME }}/lms:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
   security-scan:
     name: Security Scan
