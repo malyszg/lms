@@ -1,0 +1,103 @@
+<tr id="lead-row-{{ lead.id }}">
+    <td>
+        <code style="color: var(--fluent-neutral-foreground-3); font-size: var(--fluent-font-size-200);">{{ lead.leadUuid|slice(0, 8) }}...</code>
+    </td>
+    <td>
+        {{ lead.createdAt|date('Y-m-d H:i') }}
+    </td>
+    <td>
+        <div>
+            {% if lead.customer.firstName or lead.customer.lastName %}
+                <strong>{{ lead.customer.firstName }} {{ lead.customer.lastName }}</strong>
+            {% else %}
+                <span style="color: var(--fluent-neutral-foreground-3);">Brak danych</span>
+            {% endif %}
+        </div>
+        <div style="font-size: var(--fluent-font-size-200); color: var(--fluent-neutral-foreground-3); margin-top: var(--fluent-spacing-xxs);">
+            <a href="mailto:{{ lead.customer.email }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                    <path d="M2 3h12v10H2V3zm1 1v1l5 3 5-3V4H3zm0 2.5V12h10V6.5l-5 3-5-3z"/>
+                </svg>
+                {{ lead.customer.email }}
+            </a>
+        </div>
+        <div style="font-size: var(--fluent-font-size-200); color: var(--fluent-neutral-foreground-3); margin-top: var(--fluent-spacing-xxs);">
+            <a href="tel:{{ lead.customer.phone }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                    <path d="M4 2l2 4L4 7c1 2 3 4 5 5l1-2 4 2-1 2c-3 0-8-5-8-8l1-2z"/>
+                </svg>
+                {{ lead.customer.phone }}
+            </a>
+        </div>
+    </td>
+    <td style="text-align: center;">
+        {% if lead.aiScore %}
+            {% set badgeClass = {
+                'hot': 'fluent-badge-error',
+                'warm': 'fluent-badge-warning',
+                'cold': 'fluent-badge-neutral'
+            }[lead.aiScore.category] %}
+            
+            {% set emoji = {
+                'hot': '🔥',
+                'warm': '⚡',
+                'cold': '❄️'
+            }[lead.aiScore.category] %}
+            
+            <span class="fluent-badge {{ badgeClass }}" 
+                  title="{{ lead.aiScore.reasoning }}&#10;&#10;Sugestie:&#10;{% for suggestion in lead.aiScore.suggestions %}• {{ suggestion }}&#10;{% endfor %}"
+                  style="cursor: help; font-weight: 600;">
+                {{ emoji }} {{ lead.aiScore.score }}
+            </span>
+        {% else %}
+            <span style="color: var(--fluent-neutral-foreground-3); font-size: var(--fluent-font-size-200);">
+                —
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="fluent-badge fluent-badge-neutral">{{ lead.applicationName }}</span>
+    </td>
+    <td>
+        {% set statusBadges = {
+            'new': 'fluent-badge-info',
+            'contacted': 'fluent-badge-info',
+            'qualified': 'fluent-badge-success',
+            'converted': 'fluent-badge-success',
+            'rejected': 'fluent-badge-neutral'
+        } %}
+        <span class="fluent-badge {{ statusBadges[lead.status] ?? 'fluent-badge-neutral' }}">
+            {{ lead.statusLabel }}
+        </span>
+    </td>
+    <td style="text-align: center;">
+        {% if lead.cdpDeliveryStatus == 'success' %}
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-success)" title="Wysłano do CDP">
+                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
+            </svg>
+        {% elseif lead.cdpDeliveryStatus == 'failed' %}
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-error)" title="Błąd wysyłki do CDP">
+                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 3.5L10 3 8 5 6 3 4.5 4.5 6.5 6.5 4.5 8.5 6 10l2-2 2 2 1.5-1.5L9.5 6.5l2-2z"/>
+            </svg>
+        {% else %}
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-warning)" title="Oczekuje na wysłanie">
+                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm0 2C5.79 3 4 4.79 4 7s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm1 2v3h2l-3 3-3-3h2V5h2z"/>
+            </svg>
+        {% endif %}
+    </td>
+    <td>
+        <fluent-button appearance="accent"
+                size="small"
+                hx-get="{{ path('lead_details', {'id': lead.id}) }}"
+                hx-target="#slider-container"
+                hx-swap="innerHTML">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;">
+                <path d="M8 3c-3 0-5.5 2-7 5 1.5 3 4 5 7 5s5.5-2 7-5c-1.5-3-4-5-7-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+            </svg>
+            Szczegóły
+        </fluent-button>
+    </td>
+</tr>
+
+
+

@@ -1,0 +1,44 @@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--fluent-spacing-l); margin-bottom: var(--fluent-spacing-xxl);" 
+     id="stats-container" 
+     hx-get="{{ path('leads_stats') }}" 
+     hx-trigger="every 60s" 
+     hx-swap="innerHTML">
+    <div class="stats-card accent-primary">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="stats-label">Leady dzisiaj</div>
+                <div class="stats-value">{{ stats.leadsToday ?? 0 }}</div>
+            </div>
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="opacity: 0.8;">
+                <path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="stats-card accent-error">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="stats-label">Nieudane dostawy</div>
+                <div class="stats-value">{{ stats.failedDeliveries ?? 0 }}</div>
+            </div>
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="var(--fluent-error)" style="opacity: 0.8;">
+                <path d="M8 1l7 13H1L8 1zm0 3.5L3.5 12h9L8 4.5zM7 8h2v3H7V8zm0 4h2v2H7v-2z"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="stats-card accent-success">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="stats-label">Klienci</div>
+                <div class="stats-value">{{ stats.totalCustomers ?? 0 }}</div>
+            </div>
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="var(--fluent-success)" style="opacity: 0.8;">
+                <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+
+

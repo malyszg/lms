@@ -1,0 +1,50 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: "../src/"
+        exclude:
+            - "../src/DependencyInjection/"
+            - "../src/Entity/"
+            - "../src/Model/"
+            - "../src/DTO/"
+            - "../src/Kernel.php"
+
+    # Explicit service aliases for interfaces
+    App\Leads\ValidationServiceInterface: '@App\Leads\ValidationService'
+    App\Leads\CustomerServiceInterface: '@App\Leads\CustomerService'
+    App\Leads\LeadServiceInterface: '@App\Leads\LeadService'
+    App\Leads\LeadPropertyServiceInterface: '@App\Leads\LeadPropertyService'
+    App\Leads\EventServiceInterface: '@App\Leads\EventService'
+    App\Leads\LeadRequestTransformerInterface: '@App\Leads\LeadRequestTransformer'
+    App\ApiClient\CDPDeliveryServiceInterface: '@App\ApiClient\CDPDeliveryService'
+    App\Service\LeadViewServiceInterface: '@App\Service\LeadViewService'
+    App\Service\StatsServiceInterface: '@App\Service\StatsService'
+    
+    # Auth services
+    App\Service\UserServiceInterface: '@App\Service\UserService'
+    App\Service\PasswordChangeServiceInterface: '@App\Service\PasswordChangeService'
+
+    # Google Gemini AI Configuration
+    
+    # Guzzle HTTP Client for Gemini API
+    gemini.http_client:
+        class: GuzzleHttp\Client
+        arguments:
+            - timeout: 30
+              connect_timeout: 10
+    
+    App\Infrastructure\AI\GeminiClient:
+        arguments:
+            $httpClient: '@gemini.http_client'
+            $apiKey: '%env(GEMINI_API_KEY)%'
+            $model: '%env(GEMINI_MODEL)%'
+            $apiBaseUrl: '%env(GEMINI_API_BASE_URL)%'
+
+    App\Infrastructure\AI\GeminiClientInterface: '@App\Infrastructure\AI\GeminiClient'
+
+    App\Leads\GeminiLeadScoringService: ~
+
+    App\Leads\LeadScoringServiceInterface: '@App\Leads\GeminiLeadScoringService'

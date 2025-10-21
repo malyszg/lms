@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Model\Event" table="events">
+        <id name="id" type="bigint" column="id">
+            <generator strategy="AUTO"/>
+        </id>
+
+        <field name="eventType" type="string" length="50" nullable="false" column="event_type"/>
+        <field name="entityType" type="string" length="50" nullable="true" column="entity_type"/>
+        <field name="entityId" type="integer" nullable="true" column="entity_id"/>
+        <field name="userId" type="integer" nullable="true" column="user_id"/>
+        <field name="details" type="json" nullable="true"/>
+        <field name="retryCount" type="integer" nullable="false" column="retry_count">
+            <options>
+                <option name="default">0</option>
+            </options>
+        </field>
+        <field name="errorMessage" type="text" nullable="true" column="error_message"/>
+        <field name="ipAddress" type="string" length="45" nullable="true" column="ip_address"/>
+        <field name="userAgent" type="text" nullable="true" column="user_agent"/>
+        <field name="createdAt" type="datetime" nullable="false" column="created_at">
+            <options>
+                <option name="default">CURRENT_TIMESTAMP</option>
+            </options>
+        </field>
+
+        <indexes>
+            <index name="idx_event_type_created" columns="event_type,created_at"/>
+            <index name="idx_entity" columns="entity_type,entity_id"/>
+            <index name="idx_user_id" columns="user_id"/>
+            <index name="idx_created_at" columns="created_at"/>
+        </indexes>
+
+        <lifecycle-callbacks>
+            <lifecycle-callback type="prePersist" method="onPrePersist"/>
+        </lifecycle-callbacks>
+    </entity>
+</doctrine-mapping>
+

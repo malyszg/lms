@@ -1,0 +1,76 @@
+security:
+    # Password hasher configuration
+    password_hashers:
+        App\Model\User:
+            algorithm: auto
+            cost: 12  # bcrypt cost parameter
+
+    # User provider - load users from database
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Model\User
+                property: email  # Use email as login identifier
+
+    # Firewalls configuration
+    firewalls:
+        # Dev firewall - allow access to profiler and debug tools
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        # Main firewall - handles authentication
+        main:
+            lazy: true
+            provider: app_user_provider
+            
+            # Login form configuration
+            form_login:
+                login_path: auth_login
+                check_path: auth_login
+                enable_csrf: true
+                default_target_path: leads_index
+                always_use_default_target_path: true
+                username_parameter: _username
+                password_parameter: _password
+                
+            # Remember me functionality
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800  # 1 week in seconds
+                path: /
+                always_remember_me: false
+                remember_me_parameter: _remember_me
+            
+            # Logout configuration
+            logout:
+                path: auth_logout
+                target: auth_login
+                invalidate_session: true
+                
+            # Entry point - where to redirect unauthenticated users
+            entry_point: form_login
+
+    # Access control rules
+    access_control:
+        # Public routes (login only)
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        
+        # Authenticated routes - require at least ROLE_USER
+        - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/leads, roles: ROLE_USER }
+        - { path: ^/customers, roles: ROLE_USER }
+        - { path: ^/events, roles: ROLE_USER }
+        - { path: ^/failed-deliveries, roles: ROLE_USER }
+        
+        # Admin routes - require ROLE_ADMIN
+        - { path: ^/config, roles: ROLE_ADMIN }
+        
+        # API routes - publicznie dostępne w MVP (tokeny w przyszłości)
+        - { path: ^/api, roles: PUBLIC_ACCESS }
+
+    # Role hierarchy
+    role_hierarchy:
+        ROLE_CALL_CENTER: ROLE_USER
+        ROLE_BOK: ROLE_USER
+        ROLE_ADMIN: [ROLE_CALL_CENTER, ROLE_BOK, ROLE_USER]

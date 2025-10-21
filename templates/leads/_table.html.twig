@@ -1,0 +1,40 @@
+<div id="leads-table-container">
+    {% if leads is empty %}
+        <div style="padding: var(--fluent-spacing-xl); background-color: var(--fluent-info-bg); border-radius: var(--fluent-border-radius-large); border-left: 4px solid var(--fluent-info); display: flex; align-items: center; gap: var(--fluent-spacing-m);">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-info)">
+                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm1 10H7v2h2v-2zm0-8H7v6h2V3z"/>
+            </svg>
+            <div>
+                Nie znaleziono leadów spełniających kryteria wyszukiwania.
+                {% if app.request.query.get('status') or app.request.query.get('application_name') %}
+                    <a href="{{ path('leads_list') }}" style="color: var(--fluent-accent-primary); margin-left: var(--fluent-spacing-s);">Wyczyść filtry</a>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="fluent-table">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">UUID</th>
+                        <th>Data utworzenia</th>
+                        <th>Klient</th>
+                        <th style="width: 100px;">AI Score</th>
+                        <th>Aplikacja</th>
+                        <th>Status</th>
+                        <th style="width: 80px;">CDP Status</th>
+                        <th style="width: 150px;">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                        {% include 'leads/_table_row.html.twig' with {'lead': lead} %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+
+

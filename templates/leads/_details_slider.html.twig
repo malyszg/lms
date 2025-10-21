@@ -1,0 +1,403 @@
+{# Fluent Design Slider for Lead Details #}
+<div class="fluent-slider-backdrop" id="lead-slider-backdrop"></div>
+
+<div class="fluent-slider" id="lead-details-slider">
+    <div class="fluent-slider-header">
+        <div>
+            <h2 style="font-size: var(--fluent-font-size-600); font-weight: var(--fluent-font-weight-semibold); margin-bottom: var(--fluent-spacing-xs);">
+                Szczegóły leada
+            </h2>
+            <div style="display: flex; align-items: center; gap: var(--fluent-spacing-m);">
+                <code style="color: var(--fluent-neutral-foreground-3); font-size: var(--fluent-font-size-200);">{{ lead.leadUuid|slice(0, 13) }}...</code>
+                {% set statusBadges = {
+                    'new': 'fluent-badge-info',
+                    'contacted': 'fluent-badge-info',
+                    'qualified': 'fluent-badge-success',
+                    'converted': 'fluent-badge-success',
+                    'rejected': 'fluent-badge-neutral'
+                } %}
+                <span class="fluent-badge {{ statusBadges[lead.status] ?? 'fluent-badge-neutral' }}">{{ lead.statusLabel }}</span>
+            </div>
+        </div>
+        <fluent-button appearance="subtle" id="close-slider-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 6.586L5.707 4.293 4.293 5.707 6.586 8l-2.293 2.293 1.414 1.414L8 9.414l2.293 2.293 1.414-1.414L9.414 8l2.293-2.293-1.414-1.414L8 6.586z"/>
+            </svg>
+        </fluent-button>
+    </div>
+    
+    <div class="fluent-slider-body">
+        {# Customer Information #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle;">
+                    <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                Informacje o kliencie
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                <div>
+                    <label class="fluent-slider-label">Imię i nazwisko</label>
+                    <div class="fluent-slider-value">
+                        {% if lead.customer.firstName or lead.customer.lastName %}
+                            {{ lead.customer.firstName }} {{ lead.customer.lastName }}
+                        {% else %}
+                            <span style="color: var(--fluent-neutral-foreground-3); font-style: italic;">Brak danych</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Telefon</label>
+                    <div class="fluent-slider-value">
+                        <a href="tel:{{ lead.customer.phone }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                                <path d="M4 2l2 4L4 7c1 2 3 4 5 5l1-2 4 2-1 2c-3 0-8-5-8-8l1-2z"/>
+                            </svg>
+                            {{ lead.customer.phone }}
+                        </a>
+                    </div>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label class="fluent-slider-label">Email</label>
+                    <div class="fluent-slider-value">
+                        <a href="mailto:{{ lead.customer.email }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                                <path d="M2 3h12v10H2V3zm1 1v1l5 3 5-3V4H3zm0 2.5V12h10V6.5l-5 3-5-3z"/>
+                            </svg>
+                            {{ lead.customer.email }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Property Information #}
+        {% if lead.property %}
+            <div class="fluent-slider-section">
+                <h3 class="fluent-slider-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--fluent-success)" style="vertical-align: middle;">
+                        <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+                    </svg>
+                    Informacje o nieruchomości
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                    {% if lead.property.propertyType %}
+                        <div>
+                            <label class="fluent-slider-label">Typ nieruchomości</label>
+                            <div class="fluent-slider-value">{{ lead.property.propertyType }}</div>
+                        </div>
+                    {% endif %}
+                    {% if lead.property.price %}
+                        <div>
+                            <label class="fluent-slider-label">Cena</label>
+                            <div class="fluent-slider-value" style="color: var(--fluent-success); font-weight: var(--fluent-font-weight-semibold);">
+                                {{ lead.property.price|number_format(2, ',', ' ') }} PLN
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if lead.property.location %}
+                        <div style="grid-column: 1 / -1;">
+                            <label class="fluent-slider-label">Lokalizacja</label>
+                            <div class="fluent-slider-value">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                                    <path d="M8 1c2.21 0 4 1.79 4 4 0 2.5-4 9-4 9s-4-6.5-4-9c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                </svg>
+                                {{ lead.property.location }}
+                                {% if lead.property.city %}
+                                    , {{ lead.property.city }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if lead.property.developmentId %}
+                        <div>
+                            <label class="fluent-slider-label">ID inwestycji</label>
+                            <div class="fluent-slider-value"><code>{{ lead.property.developmentId }}</code></div>
+                        </div>
+                    {% endif %}
+                    {% if lead.property.partnerId %}
+                        <div>
+                            <label class="fluent-slider-label">ID partnera</label>
+                            <div class="fluent-slider-value"><code>{{ lead.property.partnerId }}</code></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        
+        {# Lead Metadata #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-info)" style="vertical-align: middle;">
+                    <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm1 10H7v2h2v-2zm0-8H7v6h2V3z"/>
+                </svg>
+                Metadane leada
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                <div>
+                    <label class="fluent-slider-label">Aplikacja źródłowa</label>
+                    <div class="fluent-slider-value">
+                        <span class="fluent-badge fluent-badge-neutral">{{ lead.applicationName }}</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Status CDP</label>
+                    <div class="fluent-slider-value">
+                        {% if lead.cdpDeliveryStatus == 'success' %}
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fluent-success)" style="vertical-align: middle;">
+                                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
+                            </svg>
+                            Wysłano
+                        {% elseif lead.cdpDeliveryStatus == 'failed' %}
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fluent-error)" style="vertical-align: middle;">
+                                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 3.5L10 3 8 5 6 3 4.5 4.5 6.5 6.5 4.5 8.5 6 10l2-2 2 2 1.5-1.5L9.5 6.5l2-2z"/>
+                            </svg>
+                            Błąd
+                        {% else %}
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fluent-warning)" style="vertical-align: middle;">
+                                <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm0 2C5.79 3 4 4.79 4 7s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm1 2v3h2l-3 3-3-3h2V5h2z"/>
+                            </svg>
+                            Oczekuje
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Data utworzenia</label>
+                    <div class="fluent-slider-value">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                            <path d="M5 2V1h1v1h4V1h1v1h2a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1h2zm0 1H3v2h10V3h-2v1h-1V3H6v1H5V3zm-2 3v8h10V6H3z"/>
+                        </svg>
+                        {{ lead.createdAt|date('Y-m-d H:i:s') }}
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">UUID</label>
+                    <div class="fluent-slider-value">
+                        <code style="font-size: var(--fluent-font-size-200);">{{ lead.leadUuid }}</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Customer Preferences (Editable) #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-warning)" style="vertical-align: middle;">
+                    <path d="M8 10.5c-1.38 0-2.5-1.12-2.5-2.5S6.62 5.5 8 5.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zm5.9-.4l1.1-.85-.55-1.55-1.35.05c-.25-.5-.6-.95-1.05-1.3l.35-1.3L11 3l-.9 1.05c-.6-.15-1.2-.15-1.8 0L7.4 3l-1.4 1.15.35 1.3c-.45.35-.8.8-1.05 1.3l-1.35-.05L3.4 8.25l1.1.85c-.05.3-.05.6 0 .9l-1.1.85.55 1.55 1.35-.05c.25.5.6.95 1.05 1.3l-.35 1.3L7 16l.9-1.05c.6.15 1.2.15 1.8 0L10.6 16l1.4-1.15-.35-1.3c.45-.35.8-.8 1.05-1.3l1.35.05.55-1.55-1.1-.85c.05-.3.05-.6 0-.9z"/>
+                </svg>
+                Preferencje klienta
+            </h3>
+            <form id="preferences-form" 
+                  hx-put="{{ path('lead_update_preferences', {'id': lead.id}) }}"
+                  hx-target="#preferences-form"
+                  hx-swap="outerHTML">
+                <div class="fluent-form-group">
+                    <label for="preferred_contact_time" class="fluent-label">Preferowany czas kontaktu</label>
+                    <select class="fluent-select" id="preferred_contact_time" name="preferred_contact_time">
+                        <option value="">Nie określono</option>
+                        <option value="morning">Rano (8:00-12:00)</option>
+                        <option value="afternoon">Popołudnie (12:00-16:00)</option>
+                        <option value="evening">Wieczór (16:00-20:00)</option>
+                    </select>
+                </div>
+                
+                <div class="fluent-form-group">
+                    <label for="preferred_contact_method" class="fluent-label">Preferowany sposób kontaktu</label>
+                    <select class="fluent-select" id="preferred_contact_method" name="preferred_contact_method">
+                        <option value="">Nie określono</option>
+                        <option value="phone">Telefon</option>
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                    </select>
+                </div>
+                
+                <div class="fluent-form-group">
+                    <label for="notes" class="fluent-label">Notatki</label>
+                    <textarea class="fluent-input" id="notes" name="notes" rows="3" placeholder="Dodaj notatki o kliencie..." style="resize: vertical; min-height: 80px;"></textarea>
+                </div>
+                
+                <fluent-button type="submit" appearance="accent" style="width: 100%; justify-content: center;">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
+                    </svg>
+                    Zapisz preferencje
+                </fluent-button>
+            </form>
+        </div>
+        
+        {# Actions #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                    <path d="M8 10.5c-1.38 0-2.5-1.12-2.5-2.5S6.62 5.5 8 5.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zm5.9-.4l1.1-.85-.55-1.55-1.35.05c-.25-.5-.6-.95-1.05-1.3l.35-1.3L11 3l-.9 1.05c-.6-.15-1.2-.15-1.8 0L7.4 3l-1.4 1.15.35 1.3c-.45.35-.8.8-1.05 1.3l-1.35-.05L3.4 8.25l1.1.85c-.05.3-.05.6 0 .9l-1.1.85.55 1.55 1.35-.05c.25.5.6.95 1.05 1.3l-.35 1.3L7 16l.9-1.05c.6.15 1.2.15 1.8 0L10.6 16l1.4-1.15-.35-1.3c.45-.35.8-.8 1.05-1.3l1.35.05.55-1.55-1.1-.85c.05-.3.05-.6 0-.9z"/>
+                </svg>
+                Akcje
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: var(--fluent-spacing-m);">
+                <fluent-button appearance="outline"
+                        hx-put="{{ path('lead_update_status', {'id': lead.id}) }}"
+                        hx-vals='{"status": "contacted"}'
+                        hx-confirm="Czy na pewno chcesz zmienić status na 'Skontaktowano'?"
+                        style="width: 100%; justify-content: center;">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fluent-success)" style="margin-right: 8px;">
+                        <path d="M4 2l2 4L4 7c1 2 3 4 5 5l1-2 4 2-1 2c-3 0-8-5-8-8l1-2z"/>
+                    </svg>
+                    Oznacz jako skontaktowany
+                </fluent-button>
+                
+                <fluent-button appearance="outline"
+                        hx-delete="{{ path('lead_delete', {'id': lead.id}) }}"
+                        hx-confirm="Czy na pewno chcesz usunąć tego leada? Ta operacja jest nieodwracalna."
+                        hx-target="#lead-row-{{ lead.id }}"
+                        hx-swap="delete"
+                        style="width: 100%; justify-content: center; color: var(--fluent-error); border-color: var(--fluent-error);">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M6 2h4v1H6V2zm7 1h-3V2a1 1 0 00-1-1H7a1 1 0 00-1 1v1H3v1h1v9a1 1 0 001 1h6a1 1 0 001-1V4h1V3zM5 4h6v9H5V4z"/>
+                    </svg>
+                    Usuń leada
+                </fluent-button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Fluent Design Slider */
+.fluent-slider-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 9998;
+    animation: fadeIn var(--fluent-duration-normal) var(--fluent-curve-easy-ease);
+}
+
+.fluent-slider {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 700px;
+    max-width: 90vw;
+    background-color: var(--fluent-neutral-bg-canvas);
+    box-shadow: var(--fluent-shadow-28);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    animation: slideInRight var(--fluent-duration-normal) var(--fluent-curve-easy-ease);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.fluent-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--fluent-spacing-xxl);
+    border-bottom: 1px solid var(--fluent-neutral-stroke-1);
+    background-color: var(--fluent-neutral-bg-canvas);
+}
+
+.fluent-slider-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--fluent-spacing-xxl);
+}
+
+.fluent-slider-section {
+    padding: var(--fluent-spacing-xl);
+    background-color: var(--fluent-neutral-bg-layer);
+    border-radius: var(--fluent-border-radius-large);
+    margin-bottom: var(--fluent-spacing-l);
+    border: 1px solid var(--fluent-neutral-stroke-1);
+}
+
+.fluent-slider-section-title {
+    font-size: var(--fluent-font-size-400);
+    font-weight: var(--fluent-font-weight-semibold);
+    color: var(--fluent-neutral-foreground-1);
+    margin-bottom: var(--fluent-spacing-l);
+    display: flex;
+    align-items: center;
+    gap: var(--fluent-spacing-s);
+}
+
+.fluent-slider-label {
+    display: block;
+    font-size: var(--fluent-font-size-200);
+    color: var(--fluent-neutral-foreground-3);
+    margin-bottom: var(--fluent-spacing-xs);
+    font-weight: var(--fluent-font-weight-medium);
+}
+
+.fluent-slider-value {
+    font-size: var(--fluent-font-size-300);
+    color: var(--fluent-neutral-foreground-1);
+    font-weight: var(--fluent-font-weight-semibold);
+}
+
+@media (max-width: 768px) {
+    .fluent-slider {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+</style>
+
+<script>
+// Close slider function - defined inline to ensure it's always available
+(function() {
+    function closeSlider() {
+        const slider = document.getElementById('lead-details-slider');
+        const backdrop = document.getElementById('lead-slider-backdrop');
+        
+        if (slider) {
+            slider.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+        }
+        if (backdrop) {
+            backdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+        }
+        
+        setTimeout(() => {
+            const container = document.getElementById('slider-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+        }, 200);
+    }
+    
+    // Attach event listeners
+    const closeBtn = document.getElementById('close-slider-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeSlider);
+    }
+    
+    const backdrop = document.getElementById('lead-slider-backdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', closeSlider);
+    }
+    
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeSlider();
+        }
+    });
+})();
+</script>

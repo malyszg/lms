@@ -1,0 +1,586 @@
+# E2E Test Teardown Rules
+
+Cursor rules and conventions for E2E/Functional test teardown in PHP 8.3 + Symfony 7.3 projects using PHPUnit.
+
+## Quick Summary (TL;DR)
+
+1. ✅ **DO**: Use separate test database `lms_db_test` (configured in phpunit.xml.dist)
+2. ✅ **DO**: Delete only specific test rows using `DELETE ... WHERE` with identifiable patterns
+3. ✅ **DO**: Use tearDownAfterClass() to cleanup test data after all tests complete
+4. ✅ **DO**: Use highly specific test data patterns (e.g., `a1b2c3d4-e5f6%` for UUIDs)
+5. ✅ **DO**: Ensure ALL tables in test database are CLEAR (0 rows) after tests complete
+6. ❌ **DON'T**: Use TRUNCATE TABLE (deletes ALL data)
+7. ❌ **DON'T**: Use DROP DATABASE or CREATE DATABASE
+8. ❌ **DON'T**: Use DELETE without WHERE clause (deletes ALL data)
+9. ❌ **DON'T**: Run tests against production database `lms_db`
+10. ❌ **DON'T**: Leave any test data in database after tests finish
+11. 🎯 **GOAL**: Test database `lms_db_test` must be completely clean after each test run
+
+## Core Philosophy
+
+**NEVER truncate tables, drop databases, or purge all data. Only delete the specific test rows that were created during testing.**
+
+### Complete Example
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace App\Tests\Functional\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+class LeadControllerTest extends WebTestCase
+{
+    // Use identifiable test data patterns
+    public function testCreateLead(): void
+    {
+        $client = static::createClient(['environment' => 'test']);
+        
+        $requestData = [
+            'lead_uuid' => 'a1b2c3d4-e5f6-41d4-a716-446655440001', // Test UUID pattern
+            'application_name' => 'morizon',
+            'customer' => [
+                'email' => 'functional-test@example.com', // Test email pattern
+                'phone' => '+48111222333',
+            ],
+        ];
+        
+        $client->request('POST', '/api/leads', [], [], 
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode($requestData)
+        );
+        
+        $this->assertResponseStatusCodeSame(201);
+    }
+    
+    // Clean up ONLY test data after all tests complete
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+        
+        $kernel = self::bootKernel(['environment' => 'test']);
+        $connection = $kernel->getContainer()->get('doctrine')->getConnection();
+        
+        // Delete in reverse dependency order, with specific WHERE clauses
+        $connection->executeStatement(
+            "DELETE FROM events WHERE lead_id IN (
+                SELECT id FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'
+            )"
+        );
+        $connection->executeStatement(
+            "DELETE FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'"
+        );
+        $connection->executeStatement(
+            "DELETE FROM customers WHERE email LIKE '%@test.example.com' 
+             OR email LIKE 'functional-test%'"
+        );
+        
+        $connection->close();
+        self::ensureKernelShutdown();
+    }
+    
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        
+        if (self::$kernel !== null) {
+            $em = self::$kernel->getContainer()->get('doctrine')->getManager();
+            $em->clear();
+        }
+    }
+}
+```
+
+## Database Isolation Rules
+
+- name: "MANDATORY: Use separate test database"
+  applies_to: "tests/Functional/**/*.php, phpunit.xml.dist"
+  critical: "Tests MUST use lms_db_test, NEVER lms_db"
+  message: "Configure DATABASE_URL in phpunit.xml.dist to point to lms_db_test"
+  configuration: |
+    In phpunit.xml.dist:
+    ```xml
+    <env name="DATABASE_URL" value="mysql://${TEST_MYSQL_USER:-test_user}:${TEST_MYSQL_PASSWORD:-test_password}@mysql:3306/lms_db_test"/>
+    ```
+  verification: "Run: SELECT DATABASE() - should return 'lms_db_test' during tests"
+  consequence: "Using production database risks deleting real user data"
+
+- name: "Create test database before running tests"
+  applies_to: "project setup"
+  message: "Test database must exist before PHPUnit runs"
+  setup_commands: |
+    ```bash
+    # Option 1: Via Docker
+    docker exec lms_mysql mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "
+    CREATE DATABASE IF NOT EXISTS lms_db_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    GRANT ALL PRIVILEGES ON lms_db_test.* TO 'test_user'@'%';
+    FLUSH PRIVILEGES;"
+    
+    # Option 2: Run migrations for test database
+    php bin/console doctrine:migrations:migrate --env=test -n
+    ```
+
+- name: "Every E2E test must cleanup its own data"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Delete only the specific test rows created during testing in lms_db_test. Never truncate tables or drop databases."
+  principle: "Surgical deletion, not mass destruction"
+  database: "lms_db_test only"
+
+- name: "Test data must be identifiable for selective deletion"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Use consistent prefixes/patterns for test data to enable targeted cleanup without affecting user data."
+  requirement: "MANDATORY - without identifiable patterns, cleanup is impossible"
+
+- name: "Preserve all non-test data"
+  applies_to: "tests/Functional/**/*.php"
+  message: "User data, production data, and any non-test data must remain untouched after tests."
+  verify: "After running tests, existing data should still be present in database"
+  note: "Even in lms_db_test, avoid deleting data without WHERE clauses"
+
+## Teardown Method Rules
+
+- name: "Always call parent tearDown methods first"
+  applies_to: "tests/Functional/**/*.php"
+  pattern: "protected function tearDown\\(\\): void\\s*{(?!\\s*parent::tearDown)"
+  fix: "Call parent::tearDown() as the first statement in tearDown() method."
+  example: |
+    ```php
+    protected function tearDown(): void
+    {
+        parent::tearDown(); // Always first!
+        // Your cleanup code here
+    }
+    ```
+
+- name: "Use tearDown() for per-test cleanup"
+  applies_to: "tests/Functional/**/*.php"
+  message: "tearDown() runs after each test method - use for connections, entity manager clearing, caches."
+  example: |
+    ```php
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        
+        if (self::$kernel !== null) {
+            $em = self::$kernel->getContainer()->get('doctrine')->getManager();
+            $em->clear(); // Detach all entities
+        }
+    }
+    ```
+
+- name: "Use tearDownAfterClass() for selective test data deletion"
+  applies_to: "tests/Functional/**/*.php"
+  message: "tearDownAfterClass() runs once after all tests in class - delete ONLY test rows using identifiable patterns."
+  example: |
+    ```php
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+        
+        $kernel = self::bootKernel(['environment' => 'test']);
+        $connection = $kernel->getContainer()->get('doctrine')->getConnection();
+        
+        // Delete ONLY test data - in reverse dependency order
+        // Use WHERE clauses that match ONLY test data patterns
+        $connection->executeStatement(
+            "DELETE FROM events WHERE lead_id IN (
+                SELECT id FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'
+            )"
+        );
+        $connection->executeStatement(
+            "DELETE FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'"
+        );
+        $connection->executeStatement(
+            "DELETE FROM customers WHERE email LIKE '%@test.example.com'"
+        );
+        
+        $connection->close();
+        self::ensureKernelShutdown();
+    }
+    ```
+  critical: "WHERE clauses must be specific enough to match ONLY test data"
+
+- name: "Always shutdown kernel in tearDownAfterClass"
+  applies_to: "tests/Functional/**/*.php"
+  pattern: "tearDownAfterClass.*bootKernel"
+  message: "Call self::ensureKernelShutdown() after kernel operations in tearDownAfterClass()."
+  fix: "Add self::ensureKernelShutdown() at the end of tearDownAfterClass() method."
+
+## Entity Manager Management
+
+- name: "Clear entity manager after each test"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Call $entityManager->clear() in tearDown() to detach entities and prevent memory leaks."
+  example: "$em->clear(); // Detaches all entities"
+
+- name: "Close entity manager connections"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Close database connections in tearDown to prevent 'too many connections' errors."
+  example: "$entityManager->close();"
+
+- name: "Never leave entity manager in inconsistent state"
+  applies_to: "tests/Functional/**/*.php"
+  message: "If a test fails, ensure tearDown still cleans up properly."
+  best_practice: "Use try-finally blocks for critical cleanup if needed."
+
+## Test Data Identification Patterns
+
+- name: "Test data must be identifiable"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Use consistent prefixes/patterns for test data to enable safe cleanup."
+  patterns:
+    - "UUIDs: test-*, a1b2c3d4-e5f6-* (never in production)"
+    - "Emails: *@test.example.com, functional-test@*, *-test@*"
+    - "Phones: +48111222333 (11122233x pattern)"
+    - "Names: Test*, Functional*, E2E*"
+  example: |
+    ```php
+    'lead_uuid' => 'a1b2c3d4-e5f6-41d4-a716-446655440001',
+    'customer' => ['email' => 'functional-test@example.com']
+    ```
+
+- name: "Delete test data in reverse dependency order"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Delete child records before parent records to avoid foreign key violations. Always use WHERE clauses."
+  example: |
+    ```php
+    // CORRECT: Selective deletion in reverse dependency order
+    // 1. Delete child records first
+    $connection->executeStatement(
+        "DELETE FROM events WHERE lead_id IN (
+            SELECT id FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'
+        )"
+    );
+    
+    // 2. Delete parent records
+    $connection->executeStatement(
+        "DELETE FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'"
+    );
+    
+    // 3. Delete related entities (customers) only if they match test pattern
+    $connection->executeStatement(
+        "DELETE FROM customers WHERE email LIKE '%@test.example.com'"
+    );
+    ```
+  critical: "NEVER use DELETE without WHERE clause - this would delete all data!"
+  verify: "Each DELETE statement MUST have a WHERE clause matching test data pattern"
+
+## Test Isolation Rules
+
+- name: "Tests must not depend on execution order"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Each test should set up its own data or use shared fixtures. Never assume data from previous test."
+  anti_pattern: "Assuming customer ID 123 exists from previous test"
+  best_practice: "Create customer in setUp() or use fixtures"
+
+- name: "No shared mutable state between tests"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Avoid static properties that persist between tests unless properly reset."
+  fix: "Reset static properties in setUp() or tearDown()"
+
+- name: "Each test creates its own unique test data"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Use unique identifiers (UUIDs, unique emails) for each test to avoid conflicts."
+  example: "Each test uses different UUID: 'a1b2c3d4-e5f6-...-0001', 'a1b2c3d4-e5f6-...-0002', etc."
+
+## Connection Management
+
+- name: "Close all database connections"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Close connections in tearDown to prevent resource exhaustion."
+  example: "$connection->close();"
+
+- name: "Don't leak kernel instances"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Call self::ensureKernelShutdown() when manually booting kernel."
+
+- name: "HTTP clients must be closed"
+  applies_to: "tests/Functional/**/*.php"
+  message: "If using Guzzle or other HTTP clients in tests, close them in tearDown."
+
+## Handling Edge Cases
+
+- name: "tearDownAfterClass runs even on test failures"
+  applies_to: "tests/Functional/**/*.php"
+  message: "PHPUnit guarantees tearDownAfterClass runs even if tests fail or throw exceptions."
+  implication: "Test data will be cleaned up even when tests fail"
+  exception: "If PHP crashes or is killed (SIGKILL), tearDownAfterClass won't run"
+
+- name: "Manual cleanup after crashed tests"
+  applies_to: "database maintenance"
+  message: "If PHP process crashes, test data may remain. Clean it up manually."
+  detection: "Test data patterns found in database after all tests should have completed"
+  manual_cleanup: |
+    ```sql
+    -- Run manually if tests crashed without cleanup
+    DELETE FROM events WHERE lead_id IN (
+        SELECT id FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'
+    );
+    DELETE FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%';
+    DELETE FROM customers WHERE email LIKE '%@test.example.com';
+    ```
+
+- name: "Interrupted test runs"
+  applies_to: "tests/Functional/**/*.php"
+  message: "If developer stops tests (Ctrl+C), tearDownAfterClass may not run."
+  prevention: "Use try-finally in critical sections if needed"
+  recovery: "Run manual cleanup SQL after interrupted tests"
+
+## Verifying Cleanup
+
+- name: "ALL tables in test database must be CLEAR after tests"
+  applies_to: "tests/Functional/**/*.php"
+  critical: "MANDATORY - Test database should be completely empty after cleanup"
+  message: "After running tests, ALL test-related data must be removed from lms_db_test."
+  requirement: "Test database should return 0 rows for all test data queries"
+  rationale: "Since lms_db_test is exclusively for testing, it should be clean after each test run"
+  manual_check: |
+    ```sql
+    -- Run these queries after tests to verify cleanup
+    SELECT COUNT(*) FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%';      -- Must be 0
+    SELECT COUNT(*) FROM customers WHERE email LIKE '%@test.example.com'; -- Must be 0
+    SELECT COUNT(*) FROM events WHERE event_type = 'api_request';         -- Must be 0
+    SELECT COUNT(*) FROM failed_deliveries WHERE lead_id IN (...);        -- Must be 0
+    ```
+  expected_result: "All queries MUST return 0 rows"
+  verification: "Test database should be clean and ready for next test run"
+  
+- name: "Test cleanup in isolation"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Run single test class and verify its cleanup works correctly."
+  command: "vendor/bin/phpunit tests/Functional/Controller/LeadControllerTest.php"
+  verify: "Check database has no test data with patterns used in that test class"
+
+- name: "Monitor test data accumulation"
+  applies_to: "database maintenance"
+  message: "Periodically check for accumulated test data that wasn't cleaned up."
+  query: |
+    ```sql
+    -- Find potential test data that wasn't cleaned up
+    SELECT COUNT(*) FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%';
+    SELECT COUNT(*) FROM customers WHERE email LIKE '%@test.example.com';
+    ```
+  action: "If counts are > 0 after tests complete, investigate which test isn't cleaning up"
+
+## Selective Deletion Approach (REQUIRED)
+
+- name: "Only use targeted DELETE statements"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Delete specific test rows using WHERE clauses with identifiable patterns. Never truncate or drop."
+  method: "Manual SQL cleanup in tearDownAfterClass()"
+  rationale: "Preserves all existing user and production data in the database"
+
+- name: "Every DELETE must have a WHERE clause"
+  applies_to: "tests/Functional/**/*.php"
+  critical: "MANDATORY SAFETY RULE"
+  message: "Never execute DELETE without WHERE clause. This would delete ALL data."
+  anti_pattern: "DELETE FROM customers  -- DANGEROUS! Deletes everything!"
+  correct_pattern: "DELETE FROM customers WHERE email LIKE '%@test.example.com'"
+  enforcement: "Code review must verify all DELETE statements have WHERE clauses"
+
+- name: "Verify WHERE clauses match only test data"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Before running DELETE, verify the WHERE clause won't match production data."
+  test_query: "Run SELECT with same WHERE clause to preview what will be deleted"
+  example: |
+    ```php
+    // First, verify what will be deleted
+    $toDelete = $connection->fetchAllAssociative(
+        "SELECT * FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'"
+    );
+    // Review the results, then delete
+    $connection->executeStatement(
+        "DELETE FROM leads WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%'"
+    );
+    ```
+
+## Performance Considerations
+
+- name: "Never recreate database for tests"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Use existing test database. Only delete specific test rows, never drop/create database."
+  bad: "Running doctrine:database:drop before tests"
+  good: "Deleting only test rows in tearDownAfterClass()"
+
+- name: "Delete test data once per test class"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Use tearDownAfterClass() for cleanup, not tearDown(). More efficient."
+  rationale: "Cleanup runs once after all tests, not after each test method"
+  note: "Tests in same class must use unique identifiers to avoid conflicts"
+
+- name: "Avoid unnecessary kernel boots"
+  applies_to: "tests/Functional/**/*.php"
+  message: "WebTestCase automatically boots kernel. Don't boot it again manually unless needed."
+  
+- name: "Use indexes on test data patterns"
+  applies_to: "database schema"
+  message: "If many tests run, consider adding indexes on columns used in test data WHERE clauses."
+  example: "Index on lead_uuid for fast 'WHERE lead_uuid LIKE' queries"
+
+## Common Anti-Patterns
+
+- name: "NEVER use TRUNCATE TABLE"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "TRUNCATE TABLE customers -- Deletes ALL data!"
+  consequence: "Destroys all user data, including production data in shared test database"
+  forbidden: "TRUNCATE is banned in test teardown"
+  use_instead: "DELETE with WHERE clause: DELETE FROM customers WHERE email LIKE '%@test.example.com'"
+
+- name: "NEVER drop or recreate database"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "doctrine:database:drop, CREATE DATABASE, DROP DATABASE"
+  consequence: "Destroys all data, breaks other concurrent tests, slow"
+  forbidden: "Database drop/create is banned in tests"
+
+- name: "NEVER use DELETE without WHERE clause"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "DELETE FROM leads -- Deletes EVERYTHING!"
+  critical: "This is the most dangerous anti-pattern"
+  consequence: "Deletes all data including production/user data"
+  enforcement: "Code review MUST catch this - zero tolerance"
+
+- name: "Don't skip tearDownAfterClass"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "No tearDownAfterClass() method to cleanup test data"
+  consequence: "Test data accumulates, pollutes database for other developers and CI/CD"
+  fix: "Always implement tearDownAfterClass() with selective DELETE statements"
+
+- name: "NEVER use production database in tests"
+  applies_to: "tests/Functional/**/*.php, phpunit.xml.dist"
+  anti_pattern: "DATABASE_URL pointing to lms_db in phpunit.xml"
+  critical: "EXTREMELY DANGEROUS - could delete production data"
+  correct_config: |
+    ```xml
+    <!-- WRONG - DO NOT USE -->
+    <env name="DATABASE_URL" value="mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/lms_db"/>
+    
+    <!-- CORRECT - USE THIS -->
+    <env name="DATABASE_URL" value="mysql://${TEST_MYSQL_USER:-test_user}:${TEST_MYSQL_PASSWORD:-test_password}@mysql:3306/lms_db_test"/>
+    ```
+  fix: "Always use separate test database: lms_db_test (NOT lms_db)"
+  verify: |
+    1. Check phpunit.xml.dist line 23 should contain "lms_db_test"
+    2. Run this during test: SELECT DATABASE() should return "lms_db_test"
+
+- name: "Don't assume empty database"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "Expecting customer ID 1 to not exist, or assuming lead count is 0"
+  consequence: "Tests fail unpredictably when user data exists"
+  fix: "Use unique identifiers (UUIDs) and don't make assumptions about database state"
+
+- name: "Don't use generic test data patterns"
+  applies_to: "tests/Functional/**/*.php"
+  anti_pattern: "Using email 'test@example.com' that might match real user"
+  risk: "WHERE clause could accidentally match real user data"
+  fix: "Use highly specific patterns: 'a1b2c3d4-e5f6%' for UUIDs, '%@test.example.com' for emails"
+
+## Base Test Class Pattern (Recommended)
+
+- name: "Create abstract base class for functional tests"
+  applies_to: "tests/Functional/**/*.php"
+  message: "Centralize common tearDown logic in a base class."
+  example: |
+    ```php
+    <?php
+    // tests/Functional/FunctionalTestCase.php
+    declare(strict_types=1);
+    
+    namespace App\Tests\Functional;
+    
+    use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+    
+    abstract class FunctionalTestCase extends WebTestCase
+    {
+        protected static function createClient(array $options = [], array $server = []): \Symfony\Bundle\FrameworkBundle\KernelBrowser
+        {
+            $options = array_merge(['environment' => 'test', 'debug' => true], $options);
+            return parent::createClient($options, $server);
+        }
+
+        protected function tearDown(): void
+        {
+            parent::tearDown();
+            
+            if (self::$kernel !== null) {
+                $em = self::$kernel->getContainer()->get('doctrine')->getManager();
+                $em->clear();
+            }
+        }
+
+        protected function getEntityManager(): \Doctrine\ORM\EntityManagerInterface
+        {
+            return self::getContainer()->get('doctrine')->getManager();
+        }
+    }
+    ```
+  benefit: "All functional tests inherit consistent tearDown behavior"
+
+## Checklist for E2E Test Class
+
+- [ ] **CRITICAL: phpunit.xml.dist uses DATABASE_URL with lms_db_test (NOT lms_db)**
+- [ ] **CRITICAL: lms_db_test database exists and has migrations applied**
+- [ ] Extends WebTestCase or KernelTestCase
+- [ ] Uses test environment (APP_ENV=test)
+- [ ] Has tearDown() method that calls parent::tearDown()
+- [ ] Clears entity manager in tearDown()
+- [ ] **REQUIRED: Has tearDownAfterClass() for selective test data deletion**
+- [ ] **CRITICAL: All test data uses highly identifiable patterns (e.g., a1b2c3d4-e5f6% UUIDs)**
+- [ ] **CRITICAL: All DELETE statements have WHERE clauses matching ONLY test data**
+- [ ] DELETE statements execute in reverse dependency order (children first)
+- [ ] No TRUNCATE, DROP, or CREATE DATABASE statements
+- [ ] No hardcoded IDs or assumptions about database state
+- [ ] Closes connections and shuts down kernel properly
+- [ ] Tests use unique identifiers (no conflicts between tests in same class)
+- [ ] Tests can run in any order
+- [ ] Test data is fully cleaned up after test class completes
+- [ ] **CRITICAL: ALL tables in test database return 0 rows after cleanup**
+- [ ] **CRITICAL: Verified test database is completely CLEAR (empty) after tests**
+- [ ] User/production data remains untouched after tests run
+- [ ] Verified with SELECT DATABASE() that tests run against lms_db_test
+
+## Metadata
+
+environment:
+  php: 8.3
+  framework: Symfony 7.3
+  database: MySQL 9.4
+  production_database: lms_db
+  test_database: lms_db_test
+  testing: PHPUnit 10.5
+  teardown_approach: selective_deletion
+
+philosophy:
+  - "Use separate test database (lms_db_test) - NEVER use production database (lms_db)"
+  - "Test database must be COMPLETELY CLEAR (0 rows) after every test run"
+  - "Preserve all user and production data in production database"
+  - "Only delete rows created during testing"
+  - "Never truncate, never drop database"
+  - "Surgical deletion with WHERE clauses"
+  - "Verify cleanup: ALL test data queries must return 0 rows"
+
+database_configuration:
+  production: "DATABASE_URL in .env → mysql://...@.../lms_db"
+  testing: "DATABASE_URL in phpunit.xml.dist → mysql://...@.../lms_db_test"
+  setup: "docker exec lms_mysql mysql -u root -p -e 'CREATE DATABASE IF NOT EXISTS lms_db_test;'"
+  migrations: "php bin/console doctrine:migrations:migrate --env=test -n"
+
+maintainers:
+  - name: "Your Team"
+    role: "Backend / QA"
+
+safety_rules:
+  - "Tests MUST use lms_db_test database (verify in phpunit.xml.dist line 23)"
+  - "Test database MUST be COMPLETELY CLEAR after every test run (0 rows for all test data)"
+  - "All DELETE statements MUST have WHERE clauses"
+  - "Test data MUST use identifiable patterns"
+  - "TRUNCATE and DROP are forbidden"
+  - "Always verify WHERE clauses before cleanup"
+  - "Never run tests against lms_db (production database)"
+  - "After tests: SELECT COUNT(*) from all test tables MUST return 0"
+
+references:
+  - "https://symfony.com/doc/current/testing.html"
+  - "https://phpunit.de/manual/current/en/fixtures.html"
+  - "phpunit.xml.dist line 23 (DATABASE_URL configuration)"
+  - "tests/Functional/Controller/LeadControllerTest.php (example implementation)"

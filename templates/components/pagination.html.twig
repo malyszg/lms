@@ -1,0 +1,102 @@
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--fluent-spacing-xl); flex-wrap: wrap; gap: var(--fluent-spacing-m);">
+    {# Results info #}
+    <div style="color: var(--fluent-neutral-foreground-3); font-size: var(--fluent-font-size-300);">
+        Pokazuję <strong>{{ pagination.from }}</strong>-<strong>{{ pagination.to }}</strong> z <strong>{{ pagination.total }}</strong> wyników
+    </div>
+    
+    {# Page navigation #}
+    <nav aria-label="Paginacja leadów" class="fluent-pagination">
+        {# Previous page #}
+        {% if pagination.currentPage > 1 %}
+            <button class="fluent-pagination-button" 
+                    hx-get="{{ path('leads_list', app.request.query.all|merge({page: pagination.currentPage - 1})) }}"
+                    hx-target="#leads-table-container"
+                    hx-push-url="true">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M8 2L4 6l4 4V2z"/>
+                </svg>
+            </button>
+        {% else %}
+            <button class="fluent-pagination-button" disabled>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M8 2L4 6l4 4V2z"/>
+                </svg>
+            </button>
+        {% endif %}
+        
+        {# Page numbers #}
+        {% set startPage = max(1, pagination.currentPage - 2) %}
+        {% set endPage = min(pagination.lastPage, pagination.currentPage + 2) %}
+        
+        {% if startPage > 1 %}
+            <button class="fluent-pagination-button" 
+                    hx-get="{{ path('leads_list', app.request.query.all|merge({page: 1})) }}"
+                    hx-target="#leads-table-container"
+                    hx-push-url="true">1</button>
+            {% if startPage > 2 %}
+                <span style="padding: 0 var(--fluent-spacing-xs);">...</span>
+            {% endif %}
+        {% endif %}
+        
+        {% for page in startPage..endPage %}
+            <button class="fluent-pagination-button {{ page == pagination.currentPage ? 'active' : '' }}" 
+                    hx-get="{{ path('leads_list', app.request.query.all|merge({page: page})) }}"
+                    hx-target="#leads-table-container"
+                    hx-push-url="true">{{ page }}</button>
+        {% endfor %}
+        
+        {% if endPage < pagination.lastPage %}
+            {% if endPage < pagination.lastPage - 1 %}
+                <span style="padding: 0 var(--fluent-spacing-xs);">...</span>
+            {% endif %}
+            <button class="fluent-pagination-button" 
+                    hx-get="{{ path('leads_list', app.request.query.all|merge({page: pagination.lastPage})) }}"
+                    hx-target="#leads-table-container"
+                    hx-push-url="true">{{ pagination.lastPage }}</button>
+        {% endif %}
+        
+        {# Next page #}
+        {% if pagination.currentPage < pagination.lastPage %}
+            <button class="fluent-pagination-button" 
+                    hx-get="{{ path('leads_list', app.request.query.all|merge({page: pagination.currentPage + 1})) }}"
+                    hx-target="#leads-table-container"
+                    hx-push-url="true">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M4 2l4 4-4 4V2z"/>
+                </svg>
+            </button>
+        {% else %}
+            <button class="fluent-pagination-button" disabled>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M4 2l4 4-4 4V2z"/>
+                </svg>
+            </button>
+        {% endif %}
+    </nav>
+    
+    {# Items per page selector #}
+    <fluent-menu>
+        <fluent-button slot="trigger" appearance="subtle">
+            {{ pagination.perPage }} na stronę
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="margin-left: 4px;">
+                <path d="M2 4l4 4 4-4H2z"/>
+            </svg>
+        </fluent-button>
+        {% for limit in [20, 50, 100] %}
+            <fluent-menu-item 
+                hx-get="{{ path('leads_list', app.request.query.all|merge({limit: limit, page: 1})) }}"
+                hx-target="#leads-table-container"
+                hx-push-url="true">
+                {{ limit }}
+                {% if limit == pagination.perPage %}
+                    <svg slot="end" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M6.5 12L2 7.5 3.5 6l3 3L13 3.5 14.5 5 6.5 12z"/>
+                    </svg>
+                {% endif %}
+            </fluent-menu-item>
+        {% endfor %}
+    </fluent-menu>
+</div>
+
+
+

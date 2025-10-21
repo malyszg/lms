@@ -1,0 +1,117 @@
+# .cursorrules
+name: "Symfony PHPUnit Coding Rules"
+description: "Cursor rules and conventions for PHP 8.3 + Symfony 7.3 projects using PHPUnit."
+
+rules:
+  # --- General PHP rules ---
+  - name: "Use strict typing"
+    applies_to: "*.php"
+    pattern: "^(?!declare\\(strict_types=1\\);)"
+    fix: "Add 'declare(strict_types=1);' at the top of each PHP file."
+
+  - name: "Always declare return types"
+    applies_to: "src/**/*.php"
+    message: "Every method must declare an explicit return type."
+
+  - name: "Avoid mixed or array types when possible"
+    applies_to: "src/**/*.php"
+    message: "Use DTOs, typed collections, or Value Objects instead of raw arrays or mixed types."
+
+  - name: "Prefer readonly properties for immutable data"
+    applies_to: "src/Entity/**/*.php"
+    message: "Use readonly for immutable entity or DTO properties (PHP 8.2+)."
+
+  # --- Symfony structure ---
+  - name: "Constructor dependency injection only"
+    applies_to: "src/**/*.php"
+    message: "Inject dependencies via constructor, not via setter or direct instantiation."
+
+  - name: "Avoid direct new in services"
+    applies_to: "src/**/*.php"
+    message: "Use dependency injection or factories instead of 'new' inside services."
+
+  - name: "Configuration constants in .env or parameters.yaml"
+    applies_to: "src/**/*.php"
+    message: "Do not hardcode configuration values — use parameters or environment variables."
+
+  # --- PHPUnit specific rules ---
+  - name: "MANDATORY: Use test database (lms_db_test)"
+    applies_to: "tests/**/*.php, phpunit.xml.dist"
+    critical: "Tests MUST use lms_db_test, NEVER lms_db"
+    message: "Configure DATABASE_URL in phpunit.xml.dist to point to lms_db_test"
+    configuration: |
+      In phpunit.xml.dist (line 23):
+      <env name="DATABASE_URL" value="mysql://${TEST_MYSQL_USER:-test_user}:${TEST_MYSQL_PASSWORD:-test_password}@mysql:3306/lms_db_test"/>
+    consequence: "Using production database (lms_db) risks deleting real user data"
+    
+  - name: "Each test method tests one behavior"
+    applies_to: "tests/**/*.php"
+    message: "Follow the one-assertion-per-test principle."
+
+  - name: "Kernel and functional tests boot the kernel"
+    applies_to: "tests/**/*.php"
+    message: "Functional tests must extend KernelTestCase or WebTestCase and call self::bootKernel()."
+    note: "Tests automatically use test environment (APP_ENV=test) and test database (lms_db_test)"
+
+  - name: "Use mocks for external dependencies"
+    applies_to: "tests/**/*.php"
+    message: "Mock services, HTTP clients, or external integrations instead of calling real APIs."
+
+  - name: "Clean up test data after tests"
+    applies_to: "tests/Functional/**/*.php"
+    message: "Implement tearDownAfterClass() to delete test-specific rows from lms_db_test"
+    details: "Use DELETE with WHERE clauses to remove only test data (e.g., WHERE lead_uuid LIKE 'a1b2c3d4-e5f6%')"
+    reference: "See @e2e_teardown_rules for complete teardown guidelines"
+
+  - name: "Use assertSame / assertEquals properly"
+    applies_to: "tests/**/*.php"
+    message: "Prefer assertSame() for strict comparisons."
+
+  - name: "Test naming convention"
+    applies_to: "tests/**/*.php"
+    message: "Test method names should follow: testSomething_shouldDoExpectedThing()."
+
+  # --- Code quality ---
+  - name: "Avoid unused imports"
+    applies_to: "*.php"
+    fix: "Run php-cs-fixer or rector to remove unused imports."
+
+  - name: "Prefer early returns over nested conditions"
+    applies_to: "src/**/*.php"
+    message: "Simplify conditionals by returning early when possible."
+
+  - name: "Limit method size"
+    applies_to: "src/**/*.php"
+    message: "Keep methods under ~20 lines for maintainability."
+
+  # --- Security / conventions ---
+  - name: "Never trust request data directly"
+    applies_to: "src/Controller/**/*.php"
+    message: "Always validate or sanitize Request input before using it."
+
+  - name: "CSRF protection enabled for forms"
+    applies_to: "src/Form/**/*.php"
+    message: "Always enable CSRF protection for user-submitted forms."
+
+  - name: "Do not log sensitive data"
+    applies_to: "src/**/*.php"
+    message: "Avoid logging passwords, tokens, or PII."
+
+metadata:
+  environment:
+    php: 8.3
+    framework: Symfony 7.3
+    database: MySQL 9.4
+    production_database: lms_db
+    test_database: lms_db_test
+    frontend: HTMX
+    testing: PHPUnit 10.5
+  database_separation:
+    production: "Uses lms_db (configured in .env)"
+    testing: "Uses lms_db_test (configured in phpunit.xml.dist line 23)"
+    critical: "Never run tests against lms_db - always use lms_db_test"
+  maintainers:
+    - name: "Your Team"
+      role: "Backend / QA"
+  related_rules:
+    - "@e2e_teardown_rules - Complete E2E test teardown guidelines"

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Model\Lead" table="leads">
+        <id name="id" type="integer" column="id">
+            <generator strategy="AUTO"/>
+        </id>
+
+        <field name="leadUuid" type="string" length="36" nullable="false" unique="true" column="lead_uuid"/>
+        <field name="applicationName" type="string" length="50" nullable="false" column="application_name"/>
+        <field name="status" type="string" length="20" nullable="false">
+            <options>
+                <option name="default">new</option>
+            </options>
+        </field>
+        <field name="createdAt" type="datetime" nullable="false" column="created_at">
+            <options>
+                <option name="default">CURRENT_TIMESTAMP</option>
+            </options>
+        </field>
+        <field name="updatedAt" type="datetime" nullable="false" column="updated_at">
+            <options>
+                <option name="default">CURRENT_TIMESTAMP</option>
+            </options>
+        </field>
+
+        <!-- AI Scoring Cache -->
+        <field name="aiScore" type="integer" nullable="true" column="ai_score"/>
+        <field name="aiCategory" type="string" length="10" nullable="true" column="ai_category"/>
+        <field name="aiReasoning" type="text" nullable="true" column="ai_reasoning"/>
+        <field name="aiSuggestions" type="json" nullable="true" column="ai_suggestions"/>
+        <field name="aiScoredAt" type="datetime" nullable="true" column="ai_scored_at"/>
+
+        <many-to-one field="customer" target-entity="App\Model\Customer">
+            <join-column name="customer_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+        <one-to-one field="property" target-entity="App\Model\LeadProperty" mapped-by="lead"/>
+
+        <indexes>
+            <index name="idx_customer_created" columns="customer_id,created_at"/>
+            <index name="idx_application_created" columns="application_name,created_at"/>
+            <index name="idx_status_created" columns="status,created_at"/>
+            <index name="idx_lead_uuid" columns="lead_uuid"/>
+        </indexes>
+
+        <lifecycle-callbacks>
+            <lifecycle-callback type="prePersist" method="onPrePersist"/>
+            <lifecycle-callback type="preUpdate" method="onPreUpdate"/>
+        </lifecycle-callbacks>
+    </entity>
+</doctrine-mapping>
+

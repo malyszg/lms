@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Model\FailedDelivery" table="failed_deliveries">
+        <id name="id" type="integer" column="id">
+            <generator strategy="AUTO"/>
+        </id>
+
+        <field name="cdpSystemName" type="string" length="50" nullable="false" column="cdp_system_name"/>
+        <field name="errorCode" type="string" length="50" nullable="true" column="error_code"/>
+        <field name="errorMessage" type="text" nullable="true" column="error_message"/>
+        <field name="retryCount" type="integer" nullable="false" column="retry_count">
+            <options>
+                <option name="default">0</option>
+            </options>
+        </field>
+        <field name="maxRetries" type="integer" nullable="false" column="max_retries">
+            <options>
+                <option name="default">3</option>
+            </options>
+        </field>
+        <field name="nextRetryAt" type="datetime" nullable="true" column="next_retry_at"/>
+        <field name="status" type="string" length="20" nullable="false">
+            <options>
+                <option name="default">pending</option>
+            </options>
+        </field>
+        <field name="createdAt" type="datetime" nullable="false" column="created_at">
+            <options>
+                <option name="default">CURRENT_TIMESTAMP</option>
+            </options>
+        </field>
+        <field name="resolvedAt" type="datetime" nullable="true" column="resolved_at"/>
+
+        <many-to-one field="lead" target-entity="App\Model\Lead">
+            <join-column name="lead_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+        <indexes>
+            <index name="idx_lead_id" columns="lead_id"/>
+            <index name="idx_status_next_retry" columns="status,next_retry_at"/>
+            <index name="idx_created_at" columns="created_at"/>
+        </indexes>
+
+        <lifecycle-callbacks>
+            <lifecycle-callback type="prePersist" method="onPrePersist"/>
+        </lifecycle-callbacks>
+    </entity>
+</doctrine-mapping>
+

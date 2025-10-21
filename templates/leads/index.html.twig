@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - Leady - LMS{% endblock %}
+
+{% block page_title %}Dashboard - Leady{% endblock %}
+
+{% block body %}
+<div style="max-width: 1600px; margin: 0 auto;">
+    {# Statistics cards #}
+    {% include 'leads/_stats.html.twig' with {'stats': stats} %}
+    
+    {# New leads notification #}
+    {% include 'leads/_new_leads_notification.html.twig' with {
+        'newLeadsCount': newLeadsCount,
+        'lastCheckTimestamp': lastCheckTimestamp
+    } %}
+    
+    {# Filters section #}
+    {% include 'leads/_filters.html.twig' with {'filters': filters} %}
+    
+    {# Leads table #}
+    <div class="fluent-card" style="margin-bottom: var(--fluent-spacing-xxl);">
+        {% include 'leads/_table.html.twig' with {'leads': leads} %}
+    </div>
+    
+    {# Pagination #}
+    {% include 'components/pagination.html.twig' with {'pagination': pagination} %}
+</div>
+{% endblock %}
+
+
+

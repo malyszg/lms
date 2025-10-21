@@ -1,0 +1,47 @@
+<div style="padding: var(--fluent-spacing-l); background-color: var(--fluent-neutral-bg-subtle); border-radius: var(--fluent-border-radius-large); border: 1px solid var(--fluent-neutral-stroke-1);">
+    <h3 style="font-size: var(--fluent-font-size-400); font-weight: var(--fluent-font-weight-semibold); color: var(--fluent-neutral-foreground-1); margin-bottom: var(--fluent-spacing-l);">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle; margin-right: var(--fluent-spacing-s);">
+            <path d="M14 6.5l-1.5-1.5L10 7.5V0H8v7.5L5.5 5 4 6.5 8 10.5l4-4zM2 12v2h12v-2H2z"/>
+        </svg>
+        Filtry zaawansowane
+    </h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+        <div class="fluent-form-group">
+            <label for="customer_email" class="fluent-label">Email klienta</label>
+            <input type="email" 
+                   name="customer_email" 
+                   id="customer_email" 
+                   class="fluent-input" 
+                   value="{{ filters.customerEmail ?? '' }}"
+                   placeholder="np. jan@example.com">
+        </div>
+        
+        <div class="fluent-form-group">
+            <label for="customer_phone" class="fluent-label">Telefon klienta</label>
+            <input type="tel" 
+                   name="customer_phone" 
+                   id="customer_phone" 
+                   class="fluent-input" 
+                   value="{{ filters.customerPhone ?? '' }}"
+                   placeholder="np. +48 123 456 789">
+        </div>
+        
+        <div class="fluent-form-group">
+            <label for="sort" class="fluent-label">Sortuj według</label>
+            <select name="sort" id="sort" class="fluent-select">
+                <option value="created_at" {{ filters.sort == 'created_at' ? 'selected' : '' }}>Data utworzenia</option>
+                <option value="status" {{ filters.sort == 'status' ? 'selected' : '' }}>Status</option>
+                <option value="application_name" {{ filters.sort == 'application_name' ? 'selected' : '' }}>Aplikacja</option>
+            </select>
+        </div>
+        
+        <div class="fluent-form-group">
+            <label for="order" class="fluent-label">Kolejność</label>
+            <select name="order" id="order" class="fluent-select">
+                <option value="desc" {{ filters.order == 'desc' ? 'selected' : '' }}>Malejąco</option>
+                <option value="asc" {{ filters.order == 'asc' ? 'selected' : '' }}>Rosnąco</option>
+            </select>
+        </div>
+    </div>
+</div>

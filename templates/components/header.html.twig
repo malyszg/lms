@@ -1,0 +1,60 @@
+<header class="app-header">
+    <div class="header-left">
+        <fluent-button appearance="subtle" id="sidebarToggle">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 4h16v2H2V4zm0 5h16v2H2V9zm0 5h16v2H2v-2z"/>
+            </svg>
+        </fluent-button>
+        <h1 class="header-title">{% block page_title %}Dashboard{% endblock %}</h1>
+    </div>
+    
+    <div class="header-right">
+        <div class="user-menu-wrapper">
+            <button class="user-menu-trigger" id="userMenuTrigger">
+                <fluent-avatar 
+                    style="width: 32px; height: 32px;"
+                    color="accent"
+                    initials="{% if app.user is defined and app.user %}{{ app.user.username|slice(0, 2)|upper }}{% else %}TE{% endif %}">
+                </fluent-avatar>
+                <div class="user-info">
+                    <div class="user-name">
+                        {% if app.user is defined and app.user %}
+                            {{ app.user.username }}
+                        {% else %}
+                            Test User
+                        {% endif %}
+                    </div>
+                    <div class="user-role">
+                        {% if app.user is defined and is_granted('ROLE_ADMIN') %}
+                            Admin
+                        {% elseif app.user is defined and is_granted('ROLE_CALL_CENTER') %}
+                            Call Center
+                        {% else %}
+                            BOK (Dev Mode)
+                        {% endif %}
+                    </div>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" class="chevron-icon">
+                    <path d="M2 4l4 4 4-4H2z"/>
+                </svg>
+            </button>
+            
+            <div class="user-menu-dropdown" id="userMenuDropdown">
+                <a href="{{ path('profile_change_password') }}" class="user-menu-item">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M10.5 3a3.5 3.5 0 1 0-7 0 3.5 3.5 0 0 0 7 0zM7 10.5c-2.5 0-7 1.25-7 3.75V16h14v-1.75c0-2.5-4.5-3.75-7-3.75z"/>
+                    </svg>
+                    <span>Zmień hasło</span>
+                </a>
+                <div class="user-menu-divider"></div>
+                <a href="{{ path('auth_logout') }}" class="user-menu-item">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M7 1v2H2v10h5v2H0V1h7zm2 3l6 6-6 6v-4H4V8h5V4z"/>
+                    </svg>
+                    <span>Wyloguj</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+

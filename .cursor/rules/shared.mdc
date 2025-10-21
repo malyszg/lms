@@ -1,0 +1,63 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# AI Rules for LMS
+
+Lead maanagment system
+
+## Tech Stack
+
+- PHP 8.3
+- Symfony 7.3
+- MySQL 9.4
+- HTMX
+
+## Project Structure
+
+When introducing changes to the project, always follow the directory structure below:
+
+- `./src` - source code
+- `./src/ApiClient` - libraries to connect with API's like Guzzle to share leads with CDP systems
+- `./src/Controller` - API Controllers for REST endpoints
+- `./src/DTO` - Data Transfer Objects for API requests and responses
+- `./src/EventListener` - Global event listeners (e.g., exception handling)
+- `./src/Exception` - Custom exception classes
+- `./src/Leads` - Business logic for lead processing (Services, Validators, Transformers)
+- `./src/Model` - Doctrine entities (database models)
+- `./src/Webhooks` - Webhooks endpoints
+- `./public` - public assets
+
+When modifying the directory structure, always update this section.
+
+## Coding practices
+
+### Guidelines for clean code
+
+1. **Always use environment variables** - Do not hardcode variables depends of environment like URL-s, tokens
+
+2. **Always use type parameters** - When You make new function with parameters all parameters must have declared types
+
+3. **Always declare return type of functions** - When function return result always declare type of the result
+
+4. **Always use Domain-Driven Design (DDD)** - use interfaces
+
+5. **Always write test** - when You add new futures always write test for this futures
+
+6. **Try Do not use Argument::any() in tests** - when You test methods call try to pass real variables
+
+7. **Always use XML doctrine mapping** - declare new entities in XML
+
+8. **Always use symfony frameworks components** - for example do not use $_GET, $_POST instance of it use symfony
+    component Symfony\Component\HttpFoundation
+
+9. Class name must be the same as a filename
+
+10. Declarations of methods must be always compatible with interfaces
+
+11. Always write tests
+
+12. Test results should not have Deprecations
+
+13. Always declare nullable variables at the end of methods parameters list

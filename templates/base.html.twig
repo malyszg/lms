@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LMS - Lead Management System{% endblock %}</title>
+    
+    {# Fluent UI Web Components #}
+    <script type="module" src="https://unpkg.com/@fluentui/web-components@3.0.0-beta.32/dist/web-components.min.js"></script>
+    
+    {# Fluent UI Icons (via CDN) #}
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css">
+    
+    {# Custom CSS with Fluent Design Tokens #}
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    
+    {# HTMX #}
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="fluent-body">
+    {# Main authenticated layout #}
+    <div class="app-container" id="wrapper">
+        {% include 'components/sidebar.html.twig' %}
+        
+        <main class="main-content" id="page-content-wrapper">
+            {% include 'components/header.html.twig' %}
+            
+            <div class="content-area">
+                {% block body %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    {# Slider overlay container (for lead/customer details) #}
+    <div id="slider-container"></div>
+    
+    {# Toast container (for notifications) #}
+    <div id="toast-container" class="toast-container"></div>
+    
+    {# Unauthenticated layout (for login page) #}
+    {% block unauthenticated_body %}{% endblock %}
+    
+    {# Custom JS #}
+    <script src="{{ asset('js/app.js') }}"></script>
+    
+    {% block javascripts %}{% endblock %}
+</body>
+</html>
+

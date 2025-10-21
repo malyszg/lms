@@ -1,0 +1,55 @@
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> Environment files ###
+.env
+.env.local
+.env.prod
+.env.*.local
+###< Environment files ###
+
+###> Docker ###
+docker-compose.override.yml
+###< Docker ###
+
+###> IDE ###
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+###< IDE ###
+
+###> OS ###
+.DS_Store
+Thumbs.db
+###< OS ###
+
+###> Logs ###
+*.log
+logs/
+###< Logs ###
+
+###> Cache ###
+.phpunit.cache/
+###< Cache ###
+
+###> SSL Certificates ###
+docker/ssl/
+*.pem
+*.key
+*.crt
+###< SSL Certificates ###
+
+###> Backups ###
+backups/
+*.sql
+*.tar.gz
+###< Backups ###

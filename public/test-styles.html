@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fluent Design - LMS</title>
+    
+    <!-- Fluent UI Web Components -->
+    <script type="module" src="https://unpkg.com/@fluentui/web-components@3.0.0-beta.32/dist/web-components.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link href="/css/app.css" rel="stylesheet">
+</head>
+<body class="fluent-body">
+    <div style="padding: 40px; max-width: 1200px; margin: 0 auto;">
+        <h1 style="color: var(--fluent-accent-primary); margin-bottom: 32px;">🎨 Test Fluent Design System</h1>
+        
+        <div class="fluent-card" style="margin-bottom: 24px;">
+            <h2>Fluent Card</h2>
+            <p>Jeśli widzisz tę kartę z cieniem i zaokrąglonymi rogami - CSS działa poprawnie! ✅</p>
+        </div>
+        
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <fluent-button appearance="accent">Fluent Button</fluent-button>
+            <fluent-button appearance="subtle">Subtle Button</fluent-button>
+            <button class="fluent-button-primary">CSS Button</button>
+        </div>
+        
+        <div class="stats-card accent-primary" style="margin-bottom: 24px;">
+            <div class="stats-label">Test Stat Card</div>
+            <div class="stats-value">123</div>
+        </div>
+        
+        <table class="fluent-table">
+            <thead>
+                <tr>
+                    <th>Kolumna 1</th>
+                    <th>Kolumna 2</th>
+                    <th>Kolumna 3</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Dane 1</td>
+                    <td><span class="fluent-badge fluent-badge-success">Success</span></td>
+                    <td>Test</td>
+                </tr>
+                <tr>
+                    <td>Dane 2</td>
+                    <td><span class="fluent-badge fluent-badge-error">Error</span></td>
+                    <td>Test</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 32px; padding: 16px; background-color: var(--fluent-success-bg); border-radius: 8px;">
+            <strong>✅ Jeśli widzisz style Fluent Design - wszystko działa!</strong>
+            <br>Jeśli nie - sprawdź konsolę przeglądarki (F12) pod kątem błędów.
+        </div>
+        
+        <div style="margin-top: 16px; padding: 16px; background-color: var(--fluent-neutral-bg-layer); border-radius: 8px;">
+            <strong>Diagnostyka:</strong>
+            <ul>
+                <li>CSS Font: <span style="font-family: var(--fluent-font-family);">Segoe UI Test</span></li>
+                <li>Primary Color: <span style="color: var(--fluent-accent-primary);">■</span> #0078d4</li>
+                <li>Success Color: <span style="color: var(--fluent-success);">■</span> #107c10</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        console.log('✅ JavaScript załadowany');
+        console.log('CSS Variables test:', getComputedStyle(document.body).getPropertyValue('--fluent-accent-primary'));
+    </script>
+</body>
+</html>
+
