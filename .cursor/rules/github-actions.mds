@@ -1,0 +1,27 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+## Github Action Rules
+
+Conduct these steps to ensure reliability and high quality of GitHub Actions workflow.
+
+### Version Verification
+
+In Agent Mode:
+
+1. Scan the file that user mentions and look for the public actions used within the workflow. Be explicit.
+2. For each action always trigger "Run Terminal" tool to see what is the most up-to-date version with the following command:
+
+```bash
+curl -s https://api.github.com/repos/{owner}/{repo}/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([0-9]+).*/\1/'
+```
+
+3. Make sure you executed this command. Update Github Actions Script only by applying MAJOR version number.
+
+### Workflow Triggers
+
+In Agent Mode:
+
+1. Ensure proper `default branch` (main or master) by checking current `git` configuration.
