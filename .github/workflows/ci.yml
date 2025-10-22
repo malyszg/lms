@@ -54,18 +54,6 @@ jobs:
         FLUSH PRIVILEGES;
         "
 
-    - name: Create database schema for test
-      run: |
-        echo "Creating database schema for test database..."
-        export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
-        export APP_ENV="test"
-        php bin/console doctrine:schema:create --no-interaction --force
-        echo "Schema creation completed"
-        
-        # Verify tables were created
-        echo "Verifying test database tables after schema creation..."
-        mysql -h 127.0.0.1 -u lms_user -plms_password lms_db_test -e "SHOW TABLES;"
-
     - name: Verify migration files exist
       run: |
         echo "Checking migration files..."
