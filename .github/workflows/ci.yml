@@ -176,6 +176,13 @@ jobs:
           php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, zip, bcmath, gd, sockets
 
+      - name: Set environment variables
+        run: |
+          echo "DATABASE_URL=mysql://lms_user:lms_password@127.0.0.1:3306/lms_db?serverVersion=9.4&charset=utf8mb4" >> $GITHUB_ENV
+          echo "TEST_DATABASE_URL=mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test?serverVersion=9.4&charset=utf8mb4" >> $GITHUB_ENV
+          echo "APP_ENV=test" >> $GITHUB_ENV
+          echo "APP_SECRET=ci-test-secret-key-for-symfony-cache-clear" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
         env:
