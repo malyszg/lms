@@ -39,6 +39,7 @@ jobs:
       run: |
         echo "DATABASE_URL=mysql://lms_user:lms_password@127.0.0.1:3306/lms_db?serverVersion=9.4&charset=utf8mb4" >> $GITHUB_ENV
         echo "TEST_DATABASE_URL=mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test?serverVersion=9.4&charset=utf8mb4" >> $GITHUB_ENV
+        echo "TEST_MYSQL_HOST=127.0.0.1" >> $GITHUB_ENV
         echo "APP_ENV=test" >> $GITHUB_ENV
         echo "APP_SECRET=ci-test-secret-key-for-symfony-cache-clear" >> $GITHUB_ENV
 
