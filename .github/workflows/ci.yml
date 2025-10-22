@@ -54,6 +54,18 @@ jobs:
         FLUSH PRIVILEGES;
         "
 
+    - name: Create database schema for test
+      run: |
+        echo "Creating database schema for test database..."
+        export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
+        export APP_ENV="test"
+        php bin/console doctrine:schema:create --no-interaction --force
+        echo "Schema creation completed"
+        
+        # Verify tables were created
+        echo "Verifying test database tables after schema creation..."
+        mysql -h 127.0.0.1 -u lms_user -plms_password lms_db_test -e "SHOW TABLES;"
+
     - name: Verify migration files exist
       run: |
         echo "Checking migration files..."
@@ -62,15 +74,19 @@ jobs:
 
     - name: Run database migrations for test
       run: |
+        echo "Setting up environment variables..."
+        export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
+        export APP_ENV="test"
+        
         echo "Checking migration status before running migrations..."
-        DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:status || echo "Migration status check failed, continuing..."
+        php bin/console doctrine:migrations:status || echo "Migration status check failed, continuing..."
         
         echo "Running migrations for test database..."
-        DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
+        php bin/console doctrine:migrations:migrate --no-interaction
         echo "Migrations completed successfully"
         
         echo "Checking migration status after running migrations..."
-        DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:status || echo "Migration status check failed"
+        php bin/console doctrine:migrations:status || echo "Migration status check failed"
         
         # Verify tables were created
         echo "Verifying test database tables..."
@@ -78,12 +94,12 @@ jobs:
 
     - name: Run unit tests
       run: |
-        DATABASE_URL=${{ env.TEST_DATABASE_URL }} \
-        APP_ENV=test \
+        export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
+        export APP_ENV="test"
         vendor/bin/phpunit tests/Unit --coverage-text
 
     - name: Run functional tests
       run: |
-        DATABASE_URL=${{ env.TEST_DATABASE_URL }} \
-        APP_ENV=test \
+        export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
+        export APP_ENV="test"
         vendor/bin/phpunit tests/Functional --coverage-text
