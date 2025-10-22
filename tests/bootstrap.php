@@ -26,3 +26,4 @@ echo "Environment: " . (getenv('GITHUB_ACTIONS') ? 'CI' : 'Docker') . "\n";
 
 // Load the standard Symfony autoloader
 require_once __DIR__ . '/../vendor/autoload.php';
+
