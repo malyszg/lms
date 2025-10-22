@@ -1,18 +1,13 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Manual trigger
-
-env:
-  PHP_VERSION: '8.3'
+    branches: [ main, develop ]
 
 jobs:
   test:
-    name: Test Suite
     runs-on: ubuntu-latest
     
     services:
@@ -20,228 +15,43 @@ jobs:
         image: mysql:9.4
         env:
           MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: lms_db_test
+          MYSQL_DATABASE: lms_db
           MYSQL_USER: lms_user
           MYSQL_PASSWORD: lms_password
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, zip, bcmath, gd, sockets
-          coverage: xdebug
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo
 
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+    - name: Install dependencies
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
+    - name: Create test database
+      run: |
+        mysql -h 127.0.0.1 -u root -proot_password -e "
+        CREATE DATABASE IF NOT EXISTS lms_db_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        GRANT ALL PRIVILEGES ON lms_db_test.* TO 'lms_user'@'%';
+        FLUSH PRIVILEGES;
+        "
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-        env:
-          APP_ENV: test
-          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
-          APP_SECRET: test-secret-key-for-ci
-          GEMINI_API_KEY: test-api-key-for-ci
-          GEMINI_MODEL: gemini-2.0-flash
-          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
+    - name: Run database migrations for test
+      run: |
+        APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
 
-      - name: Wait for MySQL
-        run: |
-          until mysqladmin ping -h"127.0.0.1" -P3306 -u"lms_user" -p"lms_password" --silent; do
-            echo "Waiting for MySQL..."
-            sleep 2
-          done
+    - name: Run unit tests
+      run: vendor/bin/phpunit tests/Unit --coverage-text
 
-      - name: Run database migrations
-        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
-        env:
-          APP_ENV: test
-          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
-          APP_SECRET: test-secret-key-for-ci
-          GEMINI_API_KEY: test-api-key-for-ci
-          GEMINI_MODEL: gemini-2.0-flash
-          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
-
-      - name: Run tests
-        run: |
-          vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
-        env:
-          APP_ENV: test
-          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
-          APP_SECRET: test-secret-key-for-ci
-          GEMINI_API_KEY: test-api-key-for-ci
-          GEMINI_MODEL: gemini-2.0-flash
-          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-  build:
-    name: Build Production Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check Docker Hub secrets
-        run: |
-          echo "Checking Docker Hub secrets..."
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
-            echo "Docker Hub secrets not configured. Skipping Docker build."
-            echo "DOCKER_USERNAME: '${{ secrets.DOCKER_USERNAME }}'"
-            echo "DOCKER_PASSWORD: '${{ secrets.DOCKER_PASSWORD }}'"
-            echo "To enable Docker builds, add DOCKER_USERNAME and DOCKER_PASSWORD secrets to your repository."
-            exit 0
-          else
-            echo "Docker Hub secrets found. Proceeding with build."
-            echo "DOCKER_USERNAME: '${{ secrets.DOCKER_USERNAME }}'"
-            echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
-          fi
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Verify Docker login
-        run: |
-          echo "Testing Docker Hub login..."
-          docker info | grep Username || echo "No username found in docker info"
-          echo "Docker login test completed."
-
-      - name: Debug Docker username
-        run: |
-          echo "DOCKER_USERNAME from secret: '${{ secrets.DOCKER_USERNAME }}'"
-          echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
-            echo "ERROR: DOCKER_USERNAME secret is empty!"
-            echo "Please check your GitHub repository secrets."
-            exit 1
-          else
-            echo "DOCKER_USERNAME secret is not empty, proceeding with build."
-          fi
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile.prod
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/lms:main
-            ${{ secrets.DOCKER_USERNAME }}/lms:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, zip, bcmath, gd, sockets
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-        env:
-          APP_ENV: test
-          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
-          APP_SECRET: test-secret-key-for-ci
-          GEMINI_API_KEY: test-api-key-for-ci
-          GEMINI_MODEL: gemini-2.0-flash
-          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
-
-      - name: Run security audit
-        run: composer audit --no-dev
-
-      - name: Run PHP CS Fixer
-        run: |
-          if [ ! -f .php-cs-fixer.php ]; then
-            echo "Creating PHP CS Fixer config..."
-            cat > .php-cs-fixer.php << 'EOF'
-          <?php
-          $finder = PhpCsFixer\Finder::create()
-              ->in(__DIR__)
-              ->exclude('vendor')
-              ->exclude('var')
-              ->exclude('tests')
-              ->name('*.php');
-          
-          return (new PhpCsFixer\Config())
-              ->setRules([
-                  '@Symfony' => true,
-                  'array_syntax' => ['syntax' => 'short'],
-                  'ordered_imports' => true,
-                  'no_unused_imports' => true,
-              ])
-              ->setFinder($finder);
-          EOF
-          fi
-          
-          # Install PHP CS Fixer if not present
-          if ! command -v php-cs-fixer &> /dev/null; then
-            composer require --dev friendsofphp/php-cs-fixer
-          fi
-          
-          # Run PHP CS Fixer in dry-run mode
-          echo "Running PHP CS Fixer check..."
-          if ./vendor/bin/php-cs-fixer fix --dry-run --diff --verbose; then
-            echo "✅ Code style is perfect!"
-          else
-            EXIT_CODE=$?
-            if [ $EXIT_CODE -eq 8 ]; then
-              echo "⚠️  Code style issues found (90 files need formatting)"
-              echo "💡 Run 'docker compose exec app ./vendor/bin/php-cs-fixer fix' locally to fix"
-              echo "✅ This is not a blocking error - CI continues"
-            else
-              echo "❌ PHP CS Fixer failed with exit code $EXIT_CODE"
-              exit $EXIT_CODE
-            fi
-          fi
-        env:
-          APP_ENV: test
-          DATABASE_URL: mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test
-          APP_SECRET: test-secret-key-for-ci
-          GEMINI_API_KEY: test-api-key-for-ci
-          GEMINI_MODEL: gemini-2.0-flash
-          GEMINI_API_BASE_URL: https://generativelanguage.googleapis.com
-
+    - name: Run functional tests
+      run: vendor/bin/phpunit tests/Functional --coverage-text
