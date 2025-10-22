@@ -27,7 +27,7 @@ jobs:
           --health-retries=3
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -84,13 +84,33 @@ jobs:
       run: |
         export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
         export APP_ENV="test"
-        vendor/bin/phpunit tests/Unit --coverage-text
+        vendor/bin/phpunit tests/Unit --coverage-text --coverage-html coverage/unit --coverage-clover coverage/unit/clover.xml
 
     - name: Run functional tests
       run: |
         export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
         export APP_ENV="test"
-        vendor/bin/phpunit tests/Functional --coverage-text
+        vendor/bin/phpunit tests/Functional --coverage-text --coverage-html coverage/functional --coverage-clover coverage/functional/clover.xml
+
+    - name: Upload test coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-coverage-reports-${{ github.run_number }}
+        path: |
+          coverage/unit/
+          coverage/functional/
+        retention-days: 30
+        if-no-files-found: warn
+
+    - name: Upload test results XML
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-xml-${{ github.run_number }}
+        path: |
+          coverage/unit/clover.xml
+          coverage/functional/clover.xml
+        retention-days: 30
+        if-no-files-found: warn
 
   build:
     name: Build Production Image
@@ -100,7 +120,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check Docker Hub secrets
         run: |
@@ -150,7 +170,7 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/Dockerfile.prod
@@ -168,7 +188,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
