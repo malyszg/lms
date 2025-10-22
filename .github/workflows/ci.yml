@@ -54,9 +54,27 @@ jobs:
         FLUSH PRIVILEGES;
         "
 
+    - name: Verify migration files exist
+      run: |
+        echo "Checking migration files..."
+        ls -la migrations/
+        echo "Migration files check completed"
+
     - name: Run database migrations for test
       run: |
+        echo "Checking migration status before running migrations..."
+        DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:status || echo "Migration status check failed, continuing..."
+        
+        echo "Running migrations for test database..."
         DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
+        echo "Migrations completed successfully"
+        
+        echo "Checking migration status after running migrations..."
+        DATABASE_URL=${{ env.TEST_DATABASE_URL }} APP_ENV=test php bin/console doctrine:migrations:status || echo "Migration status check failed"
+        
+        # Verify tables were created
+        echo "Verifying test database tables..."
+        mysql -h 127.0.0.1 -u lms_user -plms_password lms_db_test -e "SHOW TABLES;"
 
     - name: Run unit tests
       run: |
