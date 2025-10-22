@@ -230,6 +230,11 @@ MYSQL_USER=lms_user
 MYSQL_PASSWORD=your-mysql-password
 DATABASE_URL="mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@localhost:3306/${MYSQL_DATABASE}?serverVersion=9.4&charset=utf8mb4"
 
+# Test Database Configuration
+TEST_MYSQL_USER=lms_user
+TEST_MYSQL_PASSWORD=your-mysql-password
+TEST_DATABASE_URL="mysql://${TEST_MYSQL_USER}:${TEST_MYSQL_PASSWORD}@localhost:3306/lms_db_test?serverVersion=9.4&charset=utf8mb4"
+
 # RabbitMQ Configuration
 RABBITMQ_USER=guest
 RABBITMQ_PASSWORD=your-rabbitmq-password
@@ -309,6 +314,38 @@ EOF
     fi
 }
 
+# Create test database
+create_test_database() {
+    print_status "Setting up test database..."
+    
+    # Check if MySQL is running (Docker or local)
+    if command -v docker &> /dev/null && docker ps | grep -q lms_mysql; then
+        print_status "MySQL container detected, creating test database..."
+        
+        # Get MySQL root password from .env or use default
+        MYSQL_ROOT_PASS=$(grep MYSQL_ROOT_PASSWORD .env 2>/dev/null | cut -d'=' -f2 || echo "root_password")
+        MYSQL_USER=$(grep MYSQL_USER .env 2>/dev/null | cut -d'=' -f2 || echo "lms_user")
+        
+        # Create test database
+        docker exec lms_mysql mysql -u root -p"${MYSQL_ROOT_PASS}" -e "
+            CREATE DATABASE IF NOT EXISTS lms_db_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+            GRANT ALL PRIVILEGES ON lms_db_test.* TO '${MYSQL_USER}'@'%';
+            FLUSH PRIVILEGES;
+        " 2>/dev/null || {
+            print_warning "Could not create test database via Docker. You may need to:"
+            print_warning "1. Start MySQL container: docker compose -f docker/docker-compose.yml up -d mysql"
+            print_warning "2. Create test database manually: docker exec lms_mysql mysql -u root -p\${MYSQL_ROOT_PASSWORD} -e \"CREATE DATABASE IF NOT EXISTS lms_db_test;\""
+        }
+        
+        print_success "Test database setup completed (Docker)"
+    else
+        print_warning "MySQL container not detected. Test database creation skipped."
+        print_warning "To create test database manually:"
+        print_warning "1. Start MySQL container: docker compose -f docker/docker-compose.yml up -d mysql"
+        print_warning "2. Create test database: docker exec lms_mysql mysql -u root -p\${MYSQL_ROOT_PASSWORD} -e \"CREATE DATABASE IF NOT EXISTS lms_db_test;\""
+    fi
+}
+
 # Set proper permissions
 set_permissions() {
     print_status "Setting proper permissions..."
@@ -333,6 +370,7 @@ main() {
     create_kernel
     set_permissions
     install_dependencies
+    create_test_database
     
     echo ""
     print_success "Bootstrap setup completed! 🎉"
@@ -340,8 +378,14 @@ main() {
     echo "Next steps:"
     echo "  1. Update .env file with your actual configuration"
     echo "  2. Run database migrations: php bin/console doctrine:migrations:migrate"
-    echo "  3. Start the development server: symfony serve"
-    echo "  4. Or use Docker: ./docker/run.sh"
+    echo "  3. Run test database migrations: php bin/console doctrine:migrations:migrate --env=test"
+    echo "  4. Start the development server: symfony serve"
+    echo "  5. Or use Docker: ./docker/run.sh"
+    echo ""
+    echo "Test database:"
+    echo "  - Production: lms_db"
+    echo "  - Testing: lms_db_test"
+    echo "  - Verify setup: ./verify-test-database.sh"
     echo ""
 }
 

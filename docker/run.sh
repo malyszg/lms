@@ -135,6 +135,23 @@ wait_for_services() {
     done
     print_success "MySQL is ready"
     
+    # Verify test database exists (created by MySQL init script)
+    verify_test_database() {
+        print_status "Verifying test database setup..."
+        
+        # Wait longer for MySQL to be fully ready
+        sleep 5
+        
+        # Check if test database exists and is accessible (suppress all output)
+        if docker-compose -f docker/docker-compose.yml exec mysql mysql -u lms_user -plms_password -e "USE lms_db_test; SELECT 'Test database ready' AS status;" >/dev/null 2>&1; then
+            print_success "Test database lms_db_test is ready"
+        else
+            print_warning "Test database not accessible - will be created during migration"
+        fi
+    }
+    
+    verify_test_database
+    
     # Wait for RabbitMQ
     print_status "Waiting for RabbitMQ..."
     timeout=60
@@ -156,11 +173,29 @@ run_migrations() {
     # Wait a bit more for MySQL to be fully ready
     sleep 5
     
-    # Run migrations if they exist
+    # Run migrations for production database
     if docker-compose -f docker/docker-compose.yml exec app php bin/console doctrine:migrations:migrate --no-interaction; then
-        print_success "Database migrations completed"
+        print_success "Production database migrations completed"
     else
-        print_warning "No migrations found or migration failed"
+        print_warning "No migrations found or migration failed for production database"
+    fi
+    
+    # Ensure test database exists before running test migrations
+    print_status "Ensuring test database is ready for migrations..."
+    
+    # Verify test database is accessible (created by MySQL init script) - suppress all output
+    if docker-compose -f docker/docker-compose.yml exec mysql mysql -u lms_user -plms_password -e "USE lms_db_test; SELECT 'Ready for migrations' AS status;" >/dev/null 2>&1; then
+        print_success "Test database ready for migrations"
+    else
+        print_warning "Test database not accessible - migrations may fail"
+    fi
+    
+    # Run migrations for test database
+    print_status "Running test database migrations..."
+    if docker-compose -f docker/docker-compose.yml exec -e DATABASE_URL="mysql://lms_user:lms_password@mysql:3306/lms_db_test" app php bin/console doctrine:migrations:migrate --env=test --no-interaction; then
+        print_success "Test database migrations completed"
+    else
+        print_warning "No migrations found or migration failed for test database"
     fi
 }
 
@@ -220,7 +255,8 @@ show_urls() {
     echo "  MySQL:"
     echo "    Host: localhost"
     echo "    Port: 3306"
-    echo "    Database: lms_db"
+    echo "    Production Database: lms_db"
+    echo "    Test Database: lms_db_test"
     echo "    Username: lms_user"
     echo "    Password: [Check your .env file for MYSQL_PASSWORD]"
     echo ""
