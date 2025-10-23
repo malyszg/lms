@@ -6,6 +6,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        TARGET_STAGE: development
     container_name: lms_app
     restart: unless-stopped
     working_dir: /var/www/html

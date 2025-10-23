@@ -19,6 +19,19 @@ if [ ! -d "/var/www/html/vendor" ]; then
     composer install --no-interaction --optimize-autoloader
 fi
 
+# Run composer scripts at runtime (when environment variables are available)
+echo "🔧 Running Composer scripts..."
+if [ -n "$DATABASE_URL" ]; then
+    echo "🗄️  Database URL found, running cache:clear..."
+    php bin/console cache:clear --no-interaction || echo "⚠️  Cache clear failed, continuing..."
+else
+    echo "⚠️  No DATABASE_URL found, skipping cache:clear"
+fi
+
+# Install assets
+echo "📦 Installing assets..."
+php bin/console assets:install public --no-interaction || echo "⚠️  Assets install failed, continuing..."
+
 echo "✅ Setup complete. Starting PHP-FPM..."
 
 # Execute the main command (php-fpm)

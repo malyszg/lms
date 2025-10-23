@@ -3,7 +3,11 @@ version: '3.8'
 services:
   # PHP-FPM Application
   app:
-    image: ${DOCKER_USERNAME}/lms:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        TARGET_STAGE: production
     container_name: lms_app_prod
     restart: unless-stopped
     working_dir: /var/www/html

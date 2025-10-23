@@ -173,7 +173,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile.prod
+          file: ./docker/Dockerfile
+          target: production
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/lms:main
