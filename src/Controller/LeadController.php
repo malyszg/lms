@@ -10,6 +10,8 @@ use App\DTO\CustomerDto;
 use App\DTO\DeleteLeadResponse;
 use App\DTO\FiltersDto;
 use App\DTO\PropertyDto;
+use App\DTO\UpdateLeadRequest;
+use App\DTO\UpdateLeadResponse;
 use App\Exception\LeadNotFoundException;
 use App\Exception\ValidationException;
 use App\Leads\EventServiceInterface;
@@ -442,6 +444,147 @@ class LeadController extends AbstractController
             return $this->json([
                 'error' => 'Internal Server Error',
                 'message' => 'Wystąpił błąd podczas usuwania leada'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update lead status by UUID
+     * PUT /api/leads/{uuid}
+     *
+     * @param string $uuid Lead UUID
+     * @param Request $request
+     * @return JsonResponse
+     */
+    #[Route('/api/leads/{uuid}', name: 'api_leads_update', methods: ['PUT'])]
+    #[IsGranted('ROLE_CALL_CENTER')]
+    public function update(string $uuid, Request $request): JsonResponse
+    {
+        $startTime = microtime(true);
+        $ipAddress = $request->getClientIp();
+        $userAgent = $request->headers->get('User-Agent');
+
+        try {
+            // Validate UUID format
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+                return $this->json([
+                    'error' => 'Bad Request',
+                    'message' => 'Invalid UUID format'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Validate Content-Type
+            if ($request->headers->get('Content-Type') !== 'application/json') {
+                throw new ValidationException([
+                    'content_type' => 'Content-Type must be application/json'
+                ]);
+            }
+
+            // Decode JSON request
+            $data = json_decode($request->getContent(), true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new ValidationException([
+                    'json' => 'Invalid JSON: ' . json_last_error_msg()
+                ]);
+            }
+
+            // Create UpdateLeadRequest DTO
+            if (!isset($data['status'])) {
+                throw new ValidationException(['status' => 'Field is required']);
+            }
+
+            $updateRequest = new UpdateLeadRequest(status: (string) $data['status']);
+
+            // Update lead status
+            $lead = $this->leadService->updateLeadStatus($uuid, $updateRequest, $ipAddress, $userAgent);
+
+            // Create response DTO
+            $response = new UpdateLeadResponse(
+                id: $lead->getId(),
+                leadUuid: $lead->getLeadUuid(),
+                status: $lead->getStatus(),
+                statusLabel: \App\DTO\LeadItemDto::getStatusLabel($lead->getStatus()),
+                updatedAt: $lead->getUpdatedAt(),
+                message: 'Status leada został pomyślnie zaktualizowany'
+            );
+
+            // Log successful API request
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'PUT',
+                statusCode: 200,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'new_status' => $lead->getStatus(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent
+            );
+
+            return $this->json($response);
+
+        } catch (LeadNotFoundException $e) {
+            // Log not found error
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'PUT',
+                statusCode: 404,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'error' => $e->getMessage(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent
+            );
+
+            return $this->json([
+                'error' => 'Not Found',
+                'message' => 'Lead nie został znaleziony'
+            ], Response::HTTP_NOT_FOUND);
+
+        } catch (ValidationException $e) {
+            // Log validation error
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'PUT',
+                statusCode: 400,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'validation_errors' => $e->getErrors(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent
+            );
+
+            return $this->json([
+                'error' => 'Bad Request',
+                'message' => 'Validation failed',
+                'errors' => $e->getErrors()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            // Log internal server error
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'PUT',
+                statusCode: 500,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'error' => $e->getMessage(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent,
+                errorMessage: $e->getMessage()
+            );
+
+            return $this->json([
+                'error' => 'Internal Server Error',
+                'message' => 'Wystąpił błąd podczas aktualizacji statusu leada'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

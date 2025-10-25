@@ -121,5 +121,25 @@ interface EventServiceInterface
      * @return Event
      */
     public function logLeadDeleted(Lead $lead, ?string $ipAddress = null, ?string $userAgent = null): Event;
+
+    /**
+     * Log lead status changed event
+     *
+     * @param Lead $lead Lead that was updated
+     * @param string $oldStatus Previous status
+     * @param string $newStatus New status
+     * @param int|null $userId User ID who made the change
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logLeadStatusChanged(
+        Lead $lead,
+        string $oldStatus,
+        string $newStatus,
+        ?int $userId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Event;
 }
 

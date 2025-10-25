@@ -47,23 +47,30 @@ Obecny proces wymaga od call center logowania się do wielu systemów i wyszukiw
 - Preferencje zapisywane w osobnej tabeli powiązanej z tabelą klientów
 - Logowanie wszystkich zmian preferencji
 
-### 3.5 Usuwanie leadów
+### 3.5 Zmiana statusu leada
+- Możliwość zmiany statusu leada przez call center
+- Dostępne statusy: nowy, skontaktowany, zakwalifikowany, skonwertowany, odrzucony
+- Walidacja uprawnień (tylko ROLE_CALL_CENTER i ROLE_ADMIN)
+- Logowanie wszystkich zmian statusu w tabeli eventów
+- Potwierdzenie zmiany statusu przed wykonaniem
+
+### 3.6 Usuwanie leadów
 - Możliwość usunięcia leada z systemu
 - Potwierdzenie operacji usunięcia
 - Logowanie operacji usunięcia
 
-### 3.6 Deduplikacja danych klientów
+### 3.7 Deduplikacja danych klientów
 - Email i telefon muszą być unikatowe w bazie danych
 - LEAD_ID (UUID) zapisywany w tabeli eventów dla identyfikacji duplikatów
 - Automatyczne wykrywanie i łączenie duplikatów klientów
 
-### 3.7 Wysyłka do systemów CDP
+### 3.8 Wysyłka do systemów CDP
 - Automatyczne przekazywanie leadów do systemów CDP (SalesManago, Murapol, DomDevelopment)
 - Proces: najpierw zapisanie leada w LMS, potem próba wysłania do CDP
 - Mechanizm retry z exponential backoff w przypadku błędów
 - Możliwość ręcznego ponownego wysłania przez administratorów
 
-### 3.8 System eventów
+### 3.9 System eventów
 - Logowanie wszystkich operacji na leadach
 - Informacje o problemach z importem i dostarczeniem
 - Monitoring nieudanych dostarczeń
@@ -121,7 +128,17 @@ Kryteria akceptacji:
 - Zapisanie zmian w osobnej tabeli preferencji
 - Logowanie wszystkich modyfikacji
 
-### US-005: Usuwanie leada
+### US-005: Zmiana statusu leada
+Jako pracownik call center chcę zmieniać status leada po kontakcie z klientem, aby śledzić postęp w procesie sprzedaży.
+
+Kryteria akceptacji:
+- Możliwość zmiany statusu na: nowy, skontaktowany, zakwalifikowany, skonwertowany, odrzucony
+- Walidacja uprawnień (tylko ROLE_CALL_CENTER i ROLE_ADMIN)
+- Logowanie wszystkich zmian statusu w tabeli eventów
+- Potwierdzenie zmiany statusu przed wykonaniem
+- Aktualizacja UI w czasie rzeczywistym
+
+### US-006: Usuwanie leada
 Jako pracownik call center chcę usunąć lead z systemu, gdy nie jest już potrzebny.
 
 Kryteria akceptacji:
@@ -130,7 +147,7 @@ Kryteria akceptacji:
 - Lead zostaje trwale usunięty z bazy danych
 - Logowanie operacji usunięcia
 
-### US-006: Monitoring nieudanych dostarczeń
+### US-007: Monitoring nieudanych dostarczeń
 Jako administrator chcę zobaczyć listę leadów, które nie zostały wysłane do systemów CDP, aby móc je ponownie wysłać.
 
 Kryteria akceptacji:
@@ -139,7 +156,7 @@ Kryteria akceptacji:
 - Możliwość ręcznego ponownego wysłania
 - Informacje o przyczynie błędu
 
-### US-007: Deduplikacja klientów
+### US-008: Deduplikacja klientów
 Jako system chcę automatycznie wykrywać duplikaty klientów na podstawie emaila i telefonu, aby uniknąć wielokrotnego kontaktu z tym samym klientem.
 
 Kryteria akceptacji:
@@ -148,7 +165,7 @@ Kryteria akceptacji:
 - Wyświetlanie historii wszystkich leadów klienta
 - Możliwość ręcznego rozłączenia profili w przypadku błędu
 
-### US-008: Bezpieczny dostęp i autoryzacja
+### US-009: Bezpieczny dostęp i autoryzacja
 Jako zalogowany użytkownik chcę mieć pewność, że mam dostęp tylko do danych odpowiednich dla mojej roli.
 
 Kryteria akceptacji:
@@ -157,7 +174,7 @@ Kryteria akceptacji:
 - Wszystkie operacje są logowane z informacją o użytkowniku
 - Brak dostępu do danych innych użytkowników
 
-### US-009: Obsługa błędów integracji
+### US-010: Obsługa błędów integracji
 Jako system chcę obsługiwać błędy podczas integracji z aplikacjami źródłowymi i systemami CDP.
 
 Kryteria akceptacji:
@@ -166,7 +183,7 @@ Kryteria akceptacji:
 - Alerty dla administratorów o nieudanych operacjach
 - Możliwość ręcznego ponownego wysłania
 
-### US-010: Zarządzanie eventami
+### US-011: Zarządzanie eventami
 Jako administrator chcę przeglądać historię eventów, aby monitorować działanie systemu i rozwiązywać problemy.
 
 Kryteria akceptacji:
@@ -190,6 +207,7 @@ Kryteria akceptacji:
 - Czas obsługi leada przez call center: skrócenie o 50%
 - Liczba duplikatów: redukcja o 90%
 - Satisfaction score call center: >4.0/5.0
+- Śledzenie statusów leadów: 100% operacji zmiany statusu zalogowanych
 
 ### 6.4 Metryki techniczne
 - Wolumen: obsługa ~1000 leadów dziennie

@@ -7,7 +7,10 @@ namespace App\Leads;
 use App\ApiClient\CDPDeliveryServiceInterface;
 use App\DTO\CreateLeadRequest;
 use App\DTO\CreateLeadResponse;
+use App\DTO\UpdateLeadRequest;
 use App\Exception\LeadAlreadyExistsException;
+use App\Exception\LeadNotFoundException;
+use App\Exception\ValidationException;
 use App\Model\Lead;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -284,6 +287,97 @@ class LeadService implements LeadServiceInterface
             property: $propertyDto,
             cdpDeliveryStatus: 'pending'
         );
+    }
+
+    /**
+     * Update lead status by UUID
+     * Implements full transaction: validation, status update, logging event
+     *
+     * @param string $leadUuid UUID of lead to update
+     * @param UpdateLeadRequest $request Request with new status
+     * @param string|null $ipAddress Client IP address for logging
+     * @param string|null $userAgent Client user agent for logging
+     * @return Lead Updated lead entity
+     * @throws LeadNotFoundException If lead with given UUID doesn't exist
+     * @throws ValidationException If status is invalid
+     * @throws \Exception On database errors
+     */
+    public function updateLeadStatus(
+        string $leadUuid,
+        UpdateLeadRequest $request,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Lead {
+        // Validate status
+        $validStatuses = ['new', 'contacted', 'qualified', 'converted', 'rejected'];
+        if (!in_array($request->status, $validStatuses, true)) {
+            throw new ValidationException(
+                sprintf('Invalid status "%s". Allowed values: %s', $request->status, implode(', ', $validStatuses))
+            );
+        }
+
+        // Start transaction
+        $this->entityManager->beginTransaction();
+
+        try {
+            // Find lead by UUID
+            $lead = $this->findByUuid($leadUuid);
+            if ($lead === null) {
+                throw new LeadNotFoundException($leadUuid);
+            }
+
+            // Store old status for logging
+            $oldStatus = $lead->getStatus();
+
+            // Update status
+            $lead->setStatus($request->status);
+            $lead->setUpdatedAt(new \DateTime());
+
+            // Persist changes
+            $this->entityManager->persist($lead);
+            $this->entityManager->flush();
+
+            // Log status change event
+            $this->eventService->logLeadStatusChanged(
+                $lead,
+                $oldStatus,
+                $request->status,
+                null, // userId will be set by EventService from security context
+                $ipAddress,
+                $userAgent
+            );
+
+            // Commit transaction
+            $this->entityManager->commit();
+
+            // Log success
+            if ($this->logger !== null) {
+                $this->logger->info('Lead status updated successfully', [
+                    'lead_uuid' => $leadUuid,
+                    'old_status' => $oldStatus,
+                    'new_status' => $request->status,
+                    'ip_address' => $ipAddress,
+                ]);
+            }
+
+            return $lead;
+
+        } catch (\Exception $e) {
+            // Rollback transaction on any error
+            $this->entityManager->rollback();
+
+            // Log error
+            if ($this->logger !== null) {
+                $this->logger->error('Failed to update lead status', [
+                    'lead_uuid' => $leadUuid,
+                    'new_status' => $request->status,
+                    'error' => $e->getMessage(),
+                    'ip_address' => $ipAddress,
+                ]);
+            }
+
+            throw $e;
+        }
     }
 }
 

@@ -267,6 +267,54 @@ class EventService implements EventServiceInterface
 
         return $event;
     }
+
+    /**
+     * Log lead status changed event
+     *
+     * @param Lead $lead Lead that was updated
+     * @param string $oldStatus Previous status
+     * @param string $newStatus New status
+     * @param int|null $userId User ID who made the change
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logLeadStatusChanged(
+        Lead $lead,
+        string $oldStatus,
+        string $newStatus,
+        ?int $userId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Event {
+        $event = new Event('lead_status_changed');
+        $event->setEntityType('lead');
+        $event->setEntityId($lead->getId());
+        $event->setDetails([
+            'lead_uuid' => $lead->getLeadUuid(),
+            'customer_id' => $lead->getCustomer()->getId(),
+            'application_name' => $lead->getApplicationName(),
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+        ]);
+
+        if ($userId !== null) {
+            $event->setUserId($userId);
+        }
+
+        if ($ipAddress !== null) {
+            $event->setIpAddress($ipAddress);
+        }
+
+        if ($userAgent !== null) {
+            $event->setUserAgent($userAgent);
+        }
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
+    }
 }
 
 

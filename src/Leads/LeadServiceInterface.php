@@ -6,6 +6,7 @@ namespace App\Leads;
 
 use App\DTO\CreateLeadRequest;
 use App\DTO\CreateLeadResponse;
+use App\DTO\UpdateLeadRequest;
 use App\Model\Lead;
 
 /**
@@ -63,5 +64,25 @@ interface LeadServiceInterface
         ?string $ipAddress = null,
         ?string $userAgent = null
     ): void;
+
+    /**
+     * Update lead status by UUID
+     * Implements full transaction: validation, status update, logging event
+     *
+     * @param string $leadUuid UUID of lead to update
+     * @param UpdateLeadRequest $request Request with new status
+     * @param string|null $ipAddress Client IP address for logging
+     * @param string|null $userAgent Client user agent for logging
+     * @return Lead Updated lead entity
+     * @throws \App\Exception\LeadNotFoundException If lead with given UUID doesn't exist
+     * @throws \App\Exception\ValidationException If status is invalid
+     * @throws \Exception On database errors
+     */
+    public function updateLeadStatus(
+        string $leadUuid,
+        UpdateLeadRequest $request,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Lead;
 }
 
