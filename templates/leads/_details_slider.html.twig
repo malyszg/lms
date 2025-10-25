@@ -187,42 +187,7 @@
                 </svg>
                 Preferencje klienta
             </h3>
-            <form id="preferences-form" 
-                  hx-put="{{ path('lead_update_preferences', {'id': lead.id}) }}"
-                  hx-target="#preferences-form"
-                  hx-swap="outerHTML">
-                <div class="fluent-form-group">
-                    <label for="preferred_contact_time" class="fluent-label">Preferowany czas kontaktu</label>
-                    <select class="fluent-select" id="preferred_contact_time" name="preferred_contact_time">
-                        <option value="">Nie określono</option>
-                        <option value="morning">Rano (8:00-12:00)</option>
-                        <option value="afternoon">Popołudnie (12:00-16:00)</option>
-                        <option value="evening">Wieczór (16:00-20:00)</option>
-                    </select>
-                </div>
-                
-                <div class="fluent-form-group">
-                    <label for="preferred_contact_method" class="fluent-label">Preferowany sposób kontaktu</label>
-                    <select class="fluent-select" id="preferred_contact_method" name="preferred_contact_method">
-                        <option value="">Nie określono</option>
-                        <option value="phone">Telefon</option>
-                        <option value="email">Email</option>
-                        <option value="sms">SMS</option>
-                    </select>
-                </div>
-                
-                <div class="fluent-form-group">
-                    <label for="notes" class="fluent-label">Notatki</label>
-                    <textarea class="fluent-input" id="notes" name="notes" rows="3" placeholder="Dodaj notatki o kliencie..." style="resize: vertical; min-height: 80px;"></textarea>
-                </div>
-                
-                <fluent-button type="submit" appearance="accent" style="width: 100%; justify-content: center;">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
-                        <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
-                    </svg>
-                    Zapisz preferencje
-                </fluent-button>
-            </form>
+            {% include 'leads/_preferences_form.html.twig' %}
         </div>
         
         {# Actions #}
@@ -481,20 +446,36 @@
             }
         });
         
-        // Close dropdown when HTMX request completes
-        document.body.addEventListener('htmx:afterRequest', function(e) {
-            // Only handle status update requests
-            if (e.detail.xhr.responseURL && e.detail.xhr.responseURL.includes('/update-status')) {
-                if (e.detail.xhr.status === 200) {
-                    statusDropdownMenu.style.display = 'none';
-                    // Show success message
-                    showToast('Status leada został pomyślnie zaktualizowany', 'success');
-                } else if (e.detail.xhr.status >= 400) {
-                    // Show error message
-                    showToast('Wystąpił błąd podczas aktualizacji statusu', 'error');
+            // Close dropdown when HTMX request completes
+            document.body.addEventListener('htmx:afterRequest', function(e) {
+                // Handle status update requests
+                if (e.detail.xhr.responseURL && e.detail.xhr.responseURL.includes('/update-status')) {
+                    if (e.detail.xhr.status === 200) {
+                        statusDropdownMenu.style.display = 'none';
+                        // Show success message
+                        showToast('Status leada został pomyślnie zaktualizowany', 'success');
+                    } else if (e.detail.xhr.status >= 400) {
+                        // Show error message
+                        showToast('Wystąpił błąd podczas aktualizacji statusu', 'error');
+                    }
                 }
-            }
-        });
+                
+                // Handle preferences update requests
+                if (e.detail.xhr.responseURL && e.detail.xhr.responseURL.includes('/update-preferences')) {
+                    if (e.detail.xhr.status === 200) {
+                        // Show success message
+                        showToast('Preferencje zostały pomyślnie zapisane', 'success');
+                    } else if (e.detail.xhr.status >= 400) {
+                        // Show error message
+                        const response = e.detail.xhr.responseText;
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(response, 'text/html');
+                        const errorDiv = doc.querySelector('.fluent-message-bar-error div div');
+                        const errorMessage = errorDiv ? errorDiv.textContent.trim() : 'Wystąpił błąd walidacji danych';
+                        showToast(errorMessage, 'error');
+                    }
+                }
+            });
     }
     
     // Toast notification function

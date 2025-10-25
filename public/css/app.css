@@ -2,6 +2,42 @@
    Fluent Design System 2 - LMS Application
    ======================================== */
 
+/* Message Bars */
+.fluent-message-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fluent-spacing-s);
+  padding: var(--fluent-spacing-m);
+  border-radius: var(--fluent-corner-radius-medium);
+  margin-bottom: var(--fluent-spacing-m);
+  font-size: var(--fluent-font-size-300);
+  line-height: 1.4;
+}
+
+.fluent-message-bar-success {
+  background-color: var(--fluent-success-bg);
+  color: var(--fluent-success);
+  border: 1px solid var(--fluent-success);
+}
+
+.fluent-message-bar-error {
+  background-color: var(--fluent-error-bg);
+  color: var(--fluent-error);
+  border: 1px solid var(--fluent-error);
+}
+
+.fluent-message-bar-warning {
+  background-color: var(--fluent-warning-bg);
+  color: var(--fluent-warning);
+  border: 1px solid var(--fluent-warning);
+}
+
+.fluent-message-bar-info {
+  background-color: var(--fluent-info-bg);
+  color: var(--fluent-info);
+  border: 1px solid var(--fluent-info);
+}
+
 /* Design Tokens - Fluent 2 */
 :root {
   /* Colors - Neutral Palette */

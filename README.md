@@ -285,9 +285,9 @@ docker exec lms_app vendor/bin/phpunit tests/Unit/DTO/FiltersDtoTest.php
 - ✅ POST `/api/leads` - Create lead
 - ✅ GET `/api/leads` - List leads with filtering
 - ✅ GET `/api/leads/{uuid}` - Get lead details
-- ⏳ PUT `/api/leads/{id}/update-preferences` - (stub)
-- ⏳ PUT `/api/leads/{id}/update-status` - (stub)
-- ⏳ DELETE `/api/leads/{id}` - (stub)
+- ✅ PUT `/api/leads/{uuid}` - Update lead status
+- ✅ PUT `/leads/{id}/update-preferences` - Update customer preferences
+- ✅ DELETE `/api/leads/{uuid}` - Delete lead
 
 #### Documentation
 - ✅ README.md with quick start & architecture

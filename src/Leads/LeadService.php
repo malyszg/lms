@@ -311,9 +311,9 @@ class LeadService implements LeadServiceInterface
         // Validate status
         $validStatuses = ['new', 'contacted', 'qualified', 'converted', 'rejected'];
         if (!in_array($request->status, $validStatuses, true)) {
-            throw new ValidationException(
-                sprintf('Invalid status "%s". Allowed values: %s', $request->status, implode(', ', $validStatuses))
-            );
+            throw new ValidationException([
+                'status' => sprintf('Invalid status "%s". Allowed values: %s', $request->status, implode(', ', $validStatuses))
+            ]);
         }
 
         // Start transaction

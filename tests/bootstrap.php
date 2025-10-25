@@ -3,6 +3,11 @@
 // PHPUnit Bootstrap - Force test database usage
 // This ensures tests ALWAYS use the test database, never production
 
+// Force test environment
+$_SERVER['APP_ENV'] = 'test';
+$_ENV['APP_ENV'] = 'test';
+putenv('APP_ENV=test');
+
 // Determine the correct database host based on environment
 $dbHost = 'mysql'; // Default for Docker
 $dbPort = '3306';
@@ -23,6 +28,7 @@ putenv('DATABASE_URL=' . $testDbUrl);
 echo "PHPUnit Bootstrap: Forced DATABASE_URL to test database\n";
 echo "Test Database URL: " . $testDbUrl . "\n";
 echo "Environment: " . (getenv('GITHUB_ACTIONS') ? 'CI' : 'Docker') . "\n";
+echo "APP_ENV: " . $_ENV['APP_ENV'] . "\n";
 
 // Load the standard Symfony autoloader
 require_once __DIR__ . '/../vendor/autoload.php';

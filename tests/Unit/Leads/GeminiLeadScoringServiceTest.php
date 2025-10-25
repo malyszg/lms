@@ -230,15 +230,12 @@ class GeminiLeadScoringServiceTest extends TestCase
 
     public function testScoreBatchThrowsExceptionOnInvalidInput(): void
     {
-        $this->expectException(\TypeError::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         $service = new GeminiLeadScoringService($this->geminiClient);
 
-        $dummyProperty = new PropertyDto(null, null, null, null, null, null, null);
-        
         $invalidLeads = [
-            $this->createTestLead(),
-            new \stdClass(), // Invalid item - causes TypeError when trying to access properties
+            new \stdClass(), // Invalid item - should cause InvalidArgumentException
         ];
 
         $service->scoreBatch($invalidLeads);

@@ -6,6 +6,7 @@ namespace App\Leads;
 
 use App\Model\Event;
 use App\Model\Lead;
+use App\Model\Customer;
 
 /**
  * Event service interface
@@ -137,6 +138,26 @@ interface EventServiceInterface
         Lead $lead,
         string $oldStatus,
         string $newStatus,
+        ?int $userId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Event;
+
+    /**
+     * Log customer preferences changed event
+     *
+     * @param Customer $customer Customer that was updated
+     * @param array|null $oldPreferences Previous preferences
+     * @param array $newPreferences New preferences
+     * @param int|null $userId User ID who made the change
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logCustomerPreferencesChanged(
+        Customer $customer,
+        ?array $oldPreferences,
+        array $newPreferences,
         ?int $userId = null,
         ?string $ipAddress = null,
         ?string $userAgent = null

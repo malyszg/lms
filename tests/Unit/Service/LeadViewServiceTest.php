@@ -50,27 +50,37 @@ class LeadViewServiceTest extends TestCase
     }
     
     /**
-     * Note: Full testing of getLeadsList would require database integration
-     * This is marked as skipped for unit tests
+     * Test that getLeadsList method exists and has correct signature
      */
-    public function testGetLeadsListRequiresIntegrationTest(): void
+    public function testGetLeadsListMethodExists(): void
     {
-        $this->markTestSkipped(
-            'getLeadsList method requires database integration testing. ' .
-            'See tests/Functional/Service/LeadViewServiceIntegrationTest.php'
+        // Verify that getLeadsList method exists
+        $this->assertTrue(
+            method_exists(LeadViewService::class, 'getLeadsList'),
+            'LeadViewService should have getLeadsList method'
         );
+        
+        // Verify method signature
+        $reflection = new \ReflectionMethod(LeadViewService::class, 'getLeadsList');
+        $this->assertEquals(3, $reflection->getNumberOfParameters(), 'getLeadsList should have 3 parameters');
+        $this->assertEquals('App\DTO\LeadsListApiResponse', $reflection->getReturnType()->getName(), 'getLeadsList should return LeadsListApiResponse');
     }
     
     /**
-     * Note: Full testing of countNewLeadsSince would require database integration
-     * This is marked as skipped for unit tests
+     * Test that countNewLeadsSince method exists and has correct signature
      */
-    public function testCountNewLeadsSinceRequiresIntegrationTest(): void
+    public function testCountNewLeadsSinceMethodExists(): void
     {
-        $this->markTestSkipped(
-            'countNewLeadsSince method requires database integration testing. ' .
-            'See tests/Functional/Service/LeadViewServiceIntegrationTest.php'
+        // Verify that countNewLeadsSince method exists
+        $this->assertTrue(
+            method_exists(LeadViewService::class, 'countNewLeadsSince'),
+            'LeadViewService should have countNewLeadsSince method'
         );
+        
+        // Verify method signature
+        $reflection = new \ReflectionMethod(LeadViewService::class, 'countNewLeadsSince');
+        $this->assertEquals(1, $reflection->getNumberOfParameters(), 'countNewLeadsSince should have 1 parameter');
+        $this->assertEquals('int', $reflection->getReturnType()->getName(), 'countNewLeadsSince should return int');
     }
 }
 

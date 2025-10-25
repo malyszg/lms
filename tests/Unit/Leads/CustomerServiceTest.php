@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Leads;
 
 use App\DTO\CreateCustomerDto;
 use App\Leads\CustomerService;
+use App\Leads\EventServiceInterface;
 use App\Model\Customer;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -19,12 +20,14 @@ use PHPUnit\Framework\TestCase;
 class CustomerServiceTest extends TestCase
 {
     private EntityManagerInterface $entityManager;
+    private EventServiceInterface $eventService;
     private CustomerService $customerService;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->customerService = new CustomerService($this->entityManager);
+        $this->eventService = $this->createMock(EventServiceInterface::class);
+        $this->customerService = new CustomerService($this->entityManager, $this->eventService);
     }
 
     public function testFindOrCreateCustomerCreatesNewCustomerWhenNotExists(): void

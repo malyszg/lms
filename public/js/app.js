@@ -202,6 +202,12 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 // HTMX Error Handling
 document.addEventListener('htmx:responseError', function(event) {
     const status = event.detail.xhr.status;
+    const requestPath = event.detail.pathInfo.requestPath;
+
+    // Skip global error handling for preferences form - it handles its own errors
+    if (requestPath.includes('/update-preferences')) {
+        return;
+    }
 
     if (status === 401) {
         // Redirect to login

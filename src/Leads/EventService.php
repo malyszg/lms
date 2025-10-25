@@ -6,6 +6,7 @@ namespace App\Leads;
 
 use App\Model\Event;
 use App\Model\Lead;
+use App\Model\Customer;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -314,6 +315,82 @@ class EventService implements EventServiceInterface
         $this->entityManager->flush();
 
         return $event;
+    }
+
+    /**
+     * Log customer preferences changed event
+     *
+     * @param Customer $customer Customer that was updated
+     * @param array|null $oldPreferences Previous preferences
+     * @param array $newPreferences New preferences
+     * @param int|null $userId User ID who made the change
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logCustomerPreferencesChanged(
+        Customer $customer,
+        ?array $oldPreferences,
+        array $newPreferences,
+        ?int $userId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): Event {
+        $event = new Event('customer_preferences_changed');
+        $event->setEntityType('customer');
+        $event->setEntityId($customer->getId());
+        $event->setDetails([
+            'customer_id' => $customer->getId(),
+            'customer_email' => $customer->getEmail(),
+            'customer_phone' => $customer->getPhone(),
+            'old_preferences' => $oldPreferences,
+            'new_preferences' => $newPreferences,
+            'changes' => $this->calculatePreferenceChanges($oldPreferences, $newPreferences),
+        ]);
+
+        if ($userId !== null) {
+            $event->setUserId($userId);
+        }
+
+        if ($ipAddress !== null) {
+            $event->setIpAddress($ipAddress);
+        }
+
+        if ($userAgent !== null) {
+            $event->setUserAgent($userAgent);
+        }
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
+    }
+
+    /**
+     * Calculate changes between old and new preferences
+     *
+     * @param array|null $oldPreferences
+     * @param array $newPreferences
+     * @return array
+     */
+    private function calculatePreferenceChanges(?array $oldPreferences, array $newPreferences): array
+    {
+        $changes = [];
+        $fields = ['price_min', 'price_max', 'location', 'city'];
+
+        foreach ($fields as $field) {
+            $oldValue = $oldPreferences[$field] ?? null;
+            $newValue = $newPreferences[$field] ?? null;
+
+            if ($oldValue !== $newValue) {
+                $changes[$field] = [
+                    'old' => $oldValue,
+                    'new' => $newValue,
+                ];
+            }
+        }
+
+        return $changes;
     }
 }
 
