@@ -117,14 +117,5 @@ class LeadDetailsController extends AbstractController
         ]);
     }
     
-    #[Route('/leads/{id}', name: 'lead_delete', methods: ['DELETE'])]
-    public function delete(int $id): Response
-    {
-        // TODO: Implement lead deletion with audit logging
-        return $this->json([
-            'success' => true,
-            'message' => 'Lead został usunięty (funkcja w przygotowaniu)'
-        ]);
-    }
 }
 

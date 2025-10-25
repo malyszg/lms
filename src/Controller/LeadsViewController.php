@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\DTO\FiltersDto;
 use App\Service\LeadViewServiceInterface;
 use App\Service\StatsServiceInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,6 +27,7 @@ class LeadsViewController extends AbstractController
     public function __construct(
         private readonly LeadViewServiceInterface $leadViewService,
         private readonly StatsServiceInterface $statsService,
+        private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger
     ) {}
     
@@ -53,21 +55,6 @@ class LeadsViewController extends AbstractController
             // AI scores are now loaded from database cache - no API calls needed!
             // To score unscored leads, run: php bin/console app:score-leads
             
-            // Check if page is out of range
-            if ($page > $response->pagination->lastPage && $response->pagination->lastPage > 0) {
-                return $this->redirectToRoute('leads_index', array_merge(
-                    $request->query->all(),
-                    ['page' => $response->pagination->lastPage]
-                ));
-            }
-            
-            // Get stats
-            $stats = $this->statsService->getDashboardStats();
-            
-            // Get new leads count (since last check)
-            $lastCheck = $request->query->get('last_check', (new \DateTime('-30 seconds'))->format('c'));
-            $newLeadsCount = $this->leadViewService->countNewLeadsSince($lastCheck);
-            
             // Check if this is HTMX request (partial update)
             if ($request->headers->get('HX-Request')) {
                 // Return only the table partial
@@ -75,6 +62,21 @@ class LeadsViewController extends AbstractController
                     'leads' => $response->data,
                 ]);
             }
+            
+            // Check if page is out of range (only for full page render)
+            if ($page > $response->pagination->lastPage && $response->pagination->lastPage > 0) {
+                return $this->redirectToRoute('leads_index', array_merge(
+                    $request->query->all(),
+                    ['page' => $response->pagination->lastPage]
+                ));
+            }
+            
+            // Get stats (only for full page render)
+            $stats = $this->statsService->getDashboardStats();
+            
+            // Get new leads count (since last check)
+            $lastCheck = $request->query->get('last_check', (new \DateTime('-30 seconds'))->format('c'));
+            $newLeadsCount = $this->leadViewService->countNewLeadsSince($lastCheck);
             
             // Full page render
             return $this->render('leads/index.html.twig', [
@@ -167,6 +169,86 @@ class LeadsViewController extends AbstractController
             return $this->render('leads/_new_leads_notification.html.twig', [
                 'newLeadsCount' => 0,
                 'lastCheckTimestamp' => (new \DateTime())->format('c')
+            ]);
+        }
+    }
+    
+    /**
+     * Load delete modal data for specific lead
+     * GET /leads/{id}/delete-modal
+     *
+     * @param int $id Lead ID
+     * @param Request $request
+     * @return Response
+     */
+    #[Route('/leads/{id}/delete-modal', name: 'leads_delete_modal', methods: ['GET'])]
+    public function deleteModal(int $id, Request $request): Response
+    {
+        // This endpoint should only be accessed via HTMX
+        if (!$request->headers->get('HX-Request')) {
+            return $this->redirectToRoute('leads_index');
+        }
+        
+        try {
+            // Find lead by ID
+            $lead = $this->entityManager->getRepository(\App\Model\Lead::class)->find($id);
+            
+            if (!$lead) {
+                return $this->render('components/_error_message.html.twig', [
+                    'message' => 'Lead nie został znaleziony'
+                ]);
+            }
+            
+            // Convert Lead entity to LeadDto for template
+            $customer = $lead->getCustomer();
+            $property = $lead->getProperty();
+            
+            $leadDto = new \App\DTO\LeadDto(
+                id: $lead->getId(),
+                leadUuid: $lead->getLeadUuid(),
+                status: $lead->getStatus(),
+                createdAt: $lead->getCreatedAt(),
+                customer: new \App\DTO\CustomerDto(
+                    id: $customer->getId(),
+                    email: $customer->getEmail(),
+                    phone: $customer->getPhone(),
+                    firstName: $customer->getFirstName(),
+                    lastName: $customer->getLastName(),
+                    createdAt: $customer->getCreatedAt()
+                ),
+                applicationName: $lead->getApplicationName(),
+                property: $property ? new \App\DTO\PropertyDto(
+                    propertyId: $property->getPropertyId(),
+                    developmentId: $property->getDevelopmentId(),
+                    partnerId: $property->getPartnerId(),
+                    propertyType: $property->getPropertyType(),
+                    price: $property->getPrice(),
+                    location: $property->getLocation(),
+                    city: $property->getCity()
+                ) : new \App\DTO\PropertyDto(
+                    propertyId: null,
+                    developmentId: null,
+                    partnerId: null,
+                    propertyType: null,
+                    price: null,
+                    location: null,
+                    city: null
+                )
+            );
+            
+            return $this->render('leads/_delete_modal.html.twig', [
+                'lead' => $leadDto
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to load delete modal', [
+                'lead_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return $this->render('components/_error_message.html.twig', [
+                'message' => 'Wystąpił błąd podczas ładowania danych modala'
             ]);
         }
     }

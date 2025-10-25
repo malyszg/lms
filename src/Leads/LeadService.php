@@ -147,6 +147,71 @@ class LeadService implements LeadServiceInterface
     }
 
     /**
+     * Delete lead by UUID
+     * Implements full transaction: logging event, cascade delete
+     *
+     * @param string $leadUuid UUID of lead to delete
+     * @param string|null $ipAddress Client IP address for logging
+     * @param string|null $userAgent Client user agent for logging
+     * @return void
+     * @throws \App\Exception\LeadNotFoundException If lead with given UUID doesn't exist
+     * @throws \Exception On database errors
+     */
+    public function deleteLead(
+        string $leadUuid,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): void {
+        // Start transaction
+        $this->entityManager->beginTransaction();
+
+        try {
+            // Find lead by UUID
+            $lead = $this->findByUuid($leadUuid);
+            if ($lead === null) {
+                throw new \App\Exception\LeadNotFoundException($leadUuid);
+            }
+
+            // Load property to ensure it's in memory
+            $property = $lead->getProperty();
+
+            // Log deletion event before deleting the lead
+            $this->eventService->logLeadDeleted($lead, $ipAddress, $userAgent);
+
+            // Remove LeadProperty first if exists
+            if ($property !== null) {
+                $this->entityManager->remove($property);
+            }
+
+            // Remove lead from database
+            $this->entityManager->remove($lead);
+            $this->entityManager->flush();
+
+            // Commit transaction
+            $this->entityManager->commit();
+
+            $this->logger?->info('Lead deleted successfully', [
+                'lead_uuid' => $leadUuid,
+                'lead_id' => $lead->getId(),
+                'ip_address' => $ipAddress
+            ]);
+
+        } catch (\Exception $e) {
+            // Rollback on any error
+            $this->entityManager->rollback();
+            
+            $this->logger?->error('Failed to delete lead', [
+                'lead_uuid' => $leadUuid,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip_address' => $ipAddress
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
      * Score lead with AI and save to database cache
      * This is called automatically after lead creation
      *

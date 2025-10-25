@@ -5,12 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sidebar toggle for mobile
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar-wrapper');
-    
+
     if (sidebarToggle && sidebar) {
         sidebarToggle.addEventListener('click', function() {
             sidebar.classList.toggle('open');
         });
-        
+
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             if (window.innerWidth <= 768) {
@@ -20,40 +20,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Initialize User Menu Dropdown
     initializeUserMenu();
-    
+
     // Style Fluent Menu components (legacy, for any remaining fluent-menu elements)
-    initializeFluentMenu();
+    // initializeFluentMenu(); // Disabled - causes HTMX conflicts
 });
 
 // Initialize User Menu Dropdown
 function initializeUserMenu() {
     const menuTrigger = document.getElementById('userMenuTrigger');
     const menuDropdown = document.getElementById('userMenuDropdown');
-    
+
     if (!menuTrigger || !menuDropdown) return;
-    
+
     // Toggle menu on click
     menuTrigger.addEventListener('click', function(e) {
         e.stopPropagation();
         const isOpen = menuDropdown.classList.contains('show');
-        
+
         if (isOpen) {
             closeUserMenu();
         } else {
             openUserMenu();
         }
     });
-    
+
     // Close menu when clicking outside
     document.addEventListener('click', function(event) {
         if (!menuTrigger.contains(event.target) && !menuDropdown.contains(event.target)) {
             closeUserMenu();
         }
     });
-    
+
     // Close menu on escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
@@ -65,7 +65,7 @@ function initializeUserMenu() {
 function openUserMenu() {
     const menuTrigger = document.getElementById('userMenuTrigger');
     const menuDropdown = document.getElementById('userMenuDropdown');
-    
+
     if (menuTrigger && menuDropdown) {
         menuTrigger.classList.add('active');
         menuDropdown.classList.add('show');
@@ -75,7 +75,7 @@ function openUserMenu() {
 function closeUserMenu() {
     const menuTrigger = document.getElementById('userMenuTrigger');
     const menuDropdown = document.getElementById('userMenuDropdown');
-    
+
     if (menuTrigger && menuDropdown) {
         menuTrigger.classList.remove('active');
         menuDropdown.classList.remove('show');
@@ -88,9 +88,17 @@ function initializeFluentMenu() {
     if (customElements.get('fluent-menu')) {
         applyFluentMenuStyles();
     } else {
-        // If not yet defined, wait for them
+        // If not yet defined, wait for them with timeout
+        const timeout = setTimeout(() => {
+            console.warn('fluent-menu not defined after 5 seconds, skipping initialization');
+        }, 5000);
+        
         customElements.whenDefined('fluent-menu').then(() => {
+            clearTimeout(timeout);
             applyFluentMenuStyles();
+        }).catch(error => {
+            clearTimeout(timeout);
+            console.warn('Error waiting for fluent-menu:', error);
         });
     }
 }
@@ -98,11 +106,11 @@ function initializeFluentMenu() {
 // Apply styles to Fluent Menu
 function applyFluentMenuStyles() {
     const menus = document.querySelectorAll('fluent-menu');
-    
+
     menus.forEach(menu => {
         // Set design tokens for the menu (Fluent Web Components v3)
         const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         if (isDarkMode) {
             menu.style.setProperty('--base-layer-luminance', '0');
             menu.style.setProperty('--neutral-layer-floating', '#2b2b2b');
@@ -118,11 +126,11 @@ function applyFluentMenuStyles() {
             menu.style.setProperty('--neutral-fill-hover', '#f5f5f5');
             menu.style.setProperty('--neutral-stroke-rest', '#e0e0e0');
         }
-        
+
         menu.style.setProperty('--elevation-shadow', '0 8px 16px rgba(0,0,0,0.14)');
         menu.style.setProperty('--corner-radius', '8px');
         menu.style.setProperty('--stroke-width', '1px');
-        
+
         // Observe when menu opens to apply additional styles
         const observer = new MutationObserver(() => {
             const menuItems = menu.querySelectorAll('fluent-menu-item');
@@ -137,13 +145,13 @@ function applyFluentMenuStyles() {
                     item.style.setProperty('--neutral-fill-rest', 'transparent');
                     item.style.setProperty('--neutral-foreground-rest', '#242424');
                 }
-                
+
                 // Apply inline styles to fix icon alignment
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
                 item.style.gap = '12px';
                 item.style.padding = '10px 16px';
-                
+
                 // Style SVG icons inside menu items
                 const svgs = item.querySelectorAll('svg');
                 svgs.forEach(svg => {
@@ -154,7 +162,7 @@ function applyFluentMenuStyles() {
                     svg.style.display = 'inline-block';
                     svg.style.verticalAlign = 'middle';
                 });
-                
+
                 // Try to access shadow DOM if possible
                 if (item.shadowRoot) {
                     const shadowContent = item.shadowRoot.querySelector('.content');
@@ -166,13 +174,13 @@ function applyFluentMenuStyles() {
                 }
             });
         });
-        
+
         observer.observe(menu, {
             childList: true,
             subtree: true,
             attributes: true
         });
-        
+
         // Trigger initial styling if menu items already exist
         const existingItems = menu.querySelectorAll('fluent-menu-item');
         if (existingItems.length > 0) {
@@ -194,12 +202,14 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 // HTMX Error Handling
 document.addEventListener('htmx:responseError', function(event) {
     const status = event.detail.xhr.status;
-    
+
     if (status === 401) {
         // Redirect to login
         window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     } else if (status === 403) {
         showToast('Nie masz uprawnień do wykonania tej operacji', 'error');
+    } else if (status === 404) {
+        showToast('Zasób nie został znaleziony', 'error');
     } else if (status >= 500) {
         showToast('Wystąpił błąd serwera. Spróbuj ponownie później.', 'error');
     } else {
@@ -230,7 +240,7 @@ function showToast(message, type) {
         console.error('Toast container not found');
         return;
     }
-    
+
     // Map type to Fluent classes
     const typeClass = {
         'success': 'fluent-toast-success',
@@ -238,14 +248,14 @@ function showToast(message, type) {
         'warning': 'fluent-toast-warning',
         'info': 'fluent-toast-info'
     }[type] || 'fluent-toast-info';
-    
+
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `fluent-toast ${typeClass}`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
-    
+
     // Icon based on type
     const icons = {
         'success': '<path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>',
@@ -253,9 +263,9 @@ function showToast(message, type) {
         'warning': '<path d="M8 1l7 13H1L8 1zm0 3.5L3.5 12h9L8 4.5zM7 8h2v3H7V8zm0 4h2v2H7v-2z"/>',
         'info': '<path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm1 10H7v2h2v-2zm0-8H7v6h2V3z"/>'
     };
-    
+
     const iconSvg = icons[type] || icons['info'];
-    
+
     toast.innerHTML = `
         <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink: 0;">
             ${iconSvg}
@@ -270,9 +280,9 @@ function showToast(message, type) {
             </svg>
         </button>
     `;
-    
+
     toastContainer.appendChild(toast);
-    
+
     // Auto-remove toast after delay (except for errors)
     if (type !== 'error') {
         setTimeout(() => {
@@ -306,11 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
         filtersForm.addEventListener('submit', function(e) {
             const fromDate = document.getElementById('created_from');
             const toDate = document.getElementById('created_to');
-            
+
             if (fromDate && toDate && fromDate.value && toDate.value) {
                 const from = new Date(fromDate.value);
                 const to = new Date(toDate.value);
-                
+
                 if (from > to) {
                     e.preventDefault();
                     showToast('Data od musi być wcześniejsza niż data do', 'warning');
@@ -349,14 +359,14 @@ function updateBadgeCount(elementId, count) {
 window.closeLeadDetails = function() {
     const slider = document.getElementById('lead-details-slider');
     const backdrop = document.querySelector('.fluent-slider-backdrop');
-    
+
     if (slider) {
         slider.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
     }
     if (backdrop) {
         backdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
     }
-    
+
     setTimeout(() => {
         const container = document.getElementById('slider-container');
         if (container) {
@@ -364,3 +374,186 @@ window.closeLeadDetails = function() {
         }
     }, 200);
 }
+
+// Lead deletion modal handling
+window.loadDeleteModal = function(leadId, leadUuid) {
+    const modalContainer = document.getElementById('delete-modal-container');
+    if (!modalContainer) {
+        console.error('Delete modal container not found');
+        return;
+    }
+
+    // Load modal content via HTMX
+    htmx.ajax('GET', `/leads/${leadId}/delete-modal`, {
+        target: '#delete-modal-container',
+        swap: 'innerHTML'
+    }).then(() => {
+        // Setup event listeners for the modal
+        setupDeleteModalListeners(leadId);
+    }).catch(error => {
+        console.error('Failed to load delete modal:', error);
+        showToast('Wystąpił błąd podczas ładowania modala', 'error');
+    });
+};
+
+// Setup event listeners for delete modal
+function setupDeleteModalListeners(leadId) {
+    const modalElement = document.getElementById('deleteModal');
+    const backdropElement = document.getElementById('delete-modal-backdrop');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const cancelBtn = document.getElementById('cancel-delete-btn');
+    const closeBtn = document.getElementById('close-delete-modal-btn');
+
+    if (!modalElement || !confirmDeleteBtn) return;
+
+    // Close modal function
+    function closeModal() {
+        modalElement.style.animation = 'modalSlideOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+        backdropElement.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+
+        setTimeout(() => {
+            const container = document.getElementById('delete-modal-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+        }, 200);
+    }
+
+    // Close modal event listeners
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    if (backdropElement) {
+        backdropElement.addEventListener('click', closeModal);
+    }
+
+    // Close on ESC key
+    const escHandler = function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Handle successful deletion
+    confirmDeleteBtn.addEventListener('htmx:afterRequest', function(event) {
+        if (event.detail.xhr.status === 200) {
+            // Remove lead row from table
+            const leadRow = document.getElementById(`lead-row-${leadId}`);
+            if (leadRow) {
+                leadRow.style.animation = 'fadeOut 300ms ease-out';
+                setTimeout(() => {
+                    leadRow.remove();
+                }, 300);
+            }
+
+            // Close details slider if open
+            const slider = document.getElementById('lead-details-slider');
+            const sliderBackdrop = document.getElementById('lead-slider-backdrop');
+            if (slider && sliderBackdrop) {
+                slider.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+                sliderBackdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+                setTimeout(() => {
+                    const container = document.getElementById('slider-container');
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                }, 200);
+            }
+
+            // Close modal first
+            closeModal();
+            // Show success toast after modal is closed
+            setTimeout(() => {
+                showToast('Lead został pomyślnie usunięty', 'success');
+            }, 300);
+        }
+    });
+
+    // Handle deletion errors
+    confirmDeleteBtn.addEventListener('htmx:responseError', function(event) {
+        const status = event.detail.xhr.status;
+        let message = 'Wystąpił nieoczekiwany błąd';
+
+        switch(status) {
+            case 403:
+                message = 'Nie masz uprawnień do usunięcia tego leada';
+                break;
+            case 404:
+                message = 'Lead nie został znaleziony';
+                break;
+            case 500:
+                message = 'Wystąpił błąd serwera. Spróbuj ponownie';
+                break;
+        }
+
+        showToast(message, 'error');
+
+        // Re-enable button
+        confirmDeleteBtn.disabled = false;
+    });
+}
+
+// Handle successful lead deletion
+document.addEventListener('htmx:afterRequest', function(event) {
+    // Check if this was a delete request
+    if (event.detail.xhr.status === 200 &&
+        event.detail.pathInfo.requestPath.includes('/api/leads/') &&
+        event.detail.elt.method === 'DELETE') {
+
+        showToast('Lead został pomyślnie usunięty', 'success');
+
+        // Remove the row from table with animation
+        const targetElement = event.detail.elt.getAttribute('hx-target');
+        if (targetElement) {
+            const row = document.querySelector(targetElement);
+            if (row) {
+                row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-100%)';
+
+                setTimeout(() => {
+                    row.remove();
+                }, 300);
+            }
+        }
+    }
+});
+
+// Handle lead deletion errors specifically
+document.addEventListener('htmx:responseError', function(event) {
+    // Check if this was a delete request
+    if (event.detail.pathInfo.requestPath.includes('/api/leads/') &&
+        event.detail.elt.method === 'DELETE') {
+
+        const status = event.detail.xhr.status;
+        let message = 'Wystąpił błąd podczas usuwania leada';
+
+        switch(status) {
+            case 403:
+                message = 'Nie masz uprawnień do usunięcia tego leada';
+                break;
+            case 404:
+                message = 'Lead nie został znaleziony';
+                break;
+            case 500:
+                message = 'Wystąpił błąd serwera podczas usuwania leada';
+                break;
+        }
+
+        showToast(message, 'error');
+
+        // Re-enable delete button if it was disabled
+        const deleteBtn = event.detail.elt;
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = deleteBtn.innerHTML.replace(/<span[^>]*class="spinner-border[^"]*"[^>]*><\/span>\s*/, '');
+        }
+    }
+});

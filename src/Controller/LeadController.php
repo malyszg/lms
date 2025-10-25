@@ -7,8 +7,10 @@ namespace App\Controller;
 use App\DTO\CreateCustomerDto;
 use App\DTO\CreateLeadRequest;
 use App\DTO\CustomerDto;
+use App\DTO\DeleteLeadResponse;
 use App\DTO\FiltersDto;
 use App\DTO\PropertyDto;
+use App\Exception\LeadNotFoundException;
 use App\Exception\ValidationException;
 use App\Leads\EventServiceInterface;
 use App\Leads\LeadRequestTransformerInterface;
@@ -21,6 +23,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Lead API Controller
@@ -346,6 +349,99 @@ class LeadController extends AbstractController
             return $this->json([
                 'error' => 'Internal Server Error',
                 'message' => 'Failed to retrieve lead'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Delete lead by UUID
+     * DELETE /api/leads/{uuid}
+     *
+     * @param string $uuid Lead UUID
+     * @param Request $request
+     * @return JsonResponse
+     */
+    #[Route('/api/leads/{uuid}', name: 'api_leads_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_CALL_CENTER')]
+    public function delete(string $uuid, Request $request): JsonResponse
+    {
+        $startTime = microtime(true);
+        $ipAddress = $request->getClientIp();
+        $userAgent = $request->headers->get('User-Agent');
+
+        try {
+            // Validate UUID format
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+                return $this->json([
+                    'error' => 'Bad Request',
+                    'message' => 'Invalid UUID format'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Delete lead
+            $this->leadService->deleteLead($uuid, $ipAddress, $userAgent);
+
+            // Create response DTO
+            $response = new DeleteLeadResponse(
+                leadUuid: $uuid,
+                deletedAt: new \DateTime(),
+                message: 'Lead został pomyślnie usunięty'
+            );
+
+            // Log successful API request
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'DELETE',
+                statusCode: 200,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent
+            );
+
+            return $this->json($response);
+
+        } catch (LeadNotFoundException $e) {
+            // Log not found error
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'DELETE',
+                statusCode: 404,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'error' => $e->getMessage(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent
+            );
+
+            return $this->json([
+                'error' => 'Not Found',
+                'message' => 'Lead nie został znaleziony'
+            ], Response::HTTP_NOT_FOUND);
+
+        } catch (\Exception $e) {
+            // Log internal server error
+            $this->eventService->logApiRequest(
+                endpoint: '/api/leads/' . $uuid,
+                method: 'DELETE',
+                statusCode: 500,
+                details: [
+                    'lead_uuid' => $uuid,
+                    'error' => $e->getMessage(),
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ],
+                ipAddress: $ipAddress,
+                userAgent: $userAgent,
+                errorMessage: $e->getMessage()
+            );
+
+            return $this->json([
+                'error' => 'Internal Server Error',
+                'message' => 'Wystąpił błąd podczas usuwania leada'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

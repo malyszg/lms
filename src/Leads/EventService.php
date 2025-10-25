@@ -233,6 +233,40 @@ class EventService implements EventServiceInterface
 
         return $event;
     }
+
+    /**
+     * Log lead deleted event
+     *
+     * @param Lead $lead Lead that was deleted
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logLeadDeleted(Lead $lead, ?string $ipAddress = null, ?string $userAgent = null): Event
+    {
+        $event = new Event('lead_deleted');
+        $event->setEntityType('lead');
+        $event->setEntityId($lead->getId());
+        $event->setDetails([
+            'lead_uuid' => $lead->getLeadUuid(),
+            'customer_id' => $lead->getCustomer()->getId(),
+            'application_name' => $lead->getApplicationName(),
+            'status' => $lead->getStatus(),
+        ]);
+
+        if ($ipAddress !== null) {
+            $event->setIpAddress($ipAddress);
+        }
+
+        if ($userAgent !== null) {
+            $event->setUserAgent($userAgent);
+        }
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
+    }
 }
 
 

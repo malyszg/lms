@@ -17,7 +17,7 @@
             Leady
             <span id="leads-badge" 
                   hx-get="{{ path('leads_new_count') }}" 
-                  hx-trigger="every 30s"
+                  hx-trigger="none"
                   hx-swap="innerHTML">
                 {# Badge dynamically updated #}
             </span>
@@ -39,7 +39,7 @@
             Nieudane dostawy
             <span id="failed-deliveries-badge"
                   hx-get="{{ path('failed_deliveries_count') }}"
-                  hx-trigger="every 60s"
+                  hx-trigger="none"
                   hx-swap="innerHTML">
                 {# Badge dynamically updated #}
             </span>

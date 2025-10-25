@@ -111,5 +111,15 @@ interface EventServiceInterface
         string $username,
         ?string $ipAddress = null
     ): Event;
+
+    /**
+     * Log lead deleted event
+     *
+     * @param Lead $lead Lead that was deleted
+     * @param string|null $ipAddress IP address of request
+     * @param string|null $userAgent User agent string
+     * @return Event
+     */
+    public function logLeadDeleted(Lead $lead, ?string $ipAddress = null, ?string $userAgent = null): Event;
 }
 

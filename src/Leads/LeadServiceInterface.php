@@ -46,5 +46,22 @@ interface LeadServiceInterface
      * @return Lead|null
      */
     public function findByUuid(string $leadUuid): ?Lead;
+
+    /**
+     * Delete lead by UUID
+     * Implements full transaction: logging event, cascade delete
+     *
+     * @param string $leadUuid UUID of lead to delete
+     * @param string|null $ipAddress Client IP address for logging
+     * @param string|null $userAgent Client user agent for logging
+     * @return void
+     * @throws \App\Exception\LeadNotFoundException If lead with given UUID doesn't exist
+     * @throws \Exception On database errors
+     */
+    public function deleteLead(
+        string $leadUuid,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
+    ): void;
 }
 
