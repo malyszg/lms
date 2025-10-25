@@ -3,8 +3,8 @@
         <form id="filters-form" 
               hx-get="{{ path('leads_list') }}" 
               hx-target="#leads-table-container" 
-              hx-push-url="true"
-              hx-indicator="#loading-spinner">
+              hx-swap="innerHTML"
+              hx-push-url="true">
             
             {# Basic filters - always visible #}
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l); margin-bottom: var(--fluent-spacing-l);">
@@ -51,13 +51,12 @@
             
             {# Action buttons #}
             <div style="display: flex; gap: var(--fluent-spacing-m); align-items: center; flex-wrap: wrap;">
-                <fluent-button type="submit" appearance="accent">
-                    <span id="loading-spinner" class="htmx-indicator fluent-spinner" style="margin-right: 8px;"></span>
+                <button type="submit" class="fluent-button" style="background-color: var(--fluent-accent-primary); color: white; border: none; padding: var(--fluent-spacing-s) var(--fluent-spacing-m); border-radius: var(--fluent-border-radius-medium); cursor: pointer; display: flex; align-items: center; gap: var(--fluent-spacing-xs);">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;">
-                        <path d="M14 6.5l-1.5-1.5L10 7.5V0H8v7.5L5.5 5 4 6.5 8 10.5l4-4zM2 12v2h12v-2H2z"/>
+                        <path d="M11.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h8zm-7 1v6h6v-6h-6z"/>
                     </svg>
                     Zastosuj filtry
-                </fluent-button>
+                </button>
                 <fluent-button type="button" 
                         appearance="subtle"
                         onclick="document.getElementById('advanced-filters').classList.toggle('hidden')">

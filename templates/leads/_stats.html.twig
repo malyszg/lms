@@ -1,7 +1,7 @@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--fluent-spacing-l); margin-bottom: var(--fluent-spacing-xxl);" 
      id="stats-container" 
      hx-get="{{ path('leads_stats') }}" 
-     hx-trigger="every 60s" 
+     hx-trigger="none" 
      hx-swap="innerHTML">
     <div class="stats-card accent-primary">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">

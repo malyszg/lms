@@ -245,17 +245,16 @@
                     Oznacz jako skontaktowany
                 </fluent-button>
                 
+                {% if is_granted('ROLE_CALL_CENTER') or is_granted('ROLE_ADMIN') %}
                 <fluent-button appearance="outline"
-                        hx-delete="{{ path('lead_delete', {'id': lead.id}) }}"
-                        hx-confirm="Czy na pewno chcesz usunąć tego leada? Ta operacja jest nieodwracalna."
-                        hx-target="#lead-row-{{ lead.id }}"
-                        hx-swap="delete"
+                        onclick="loadDeleteModal({{ lead.id }}, '{{ lead.leadUuid }}')"
                         style="width: 100%; justify-content: center; color: var(--fluent-error); border-color: var(--fluent-error);">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
                         <path d="M6 2h4v1H6V2zm7 1h-3V2a1 1 0 00-1-1H7a1 1 0 00-1 1v1H3v1h1v9a1 1 0 001 1h6a1 1 0 001-1V4h1V3zM5 4h6v9H5V4z"/>
                     </svg>
                     Usuń leada
                 </fluent-button>
+                {% endif %}
             </div>
         </div>
     </div>
