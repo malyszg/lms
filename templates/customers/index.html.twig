@@ -4,11 +4,510 @@
 
 {% block body %}
 <div class="container-fluid">
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i>
-        {{ message }}
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-people me-2"></i>
+                    Klienci
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="refreshStats()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Odśwież
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4" id="stats-container">
+        {% include 'customers/_stats.html.twig' with {'stats': stats} %}
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>
+                        Filtry
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% include 'customers/_filters.html.twig' with {'filters': filters} %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Lista klientów
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" id="items-per-page" onchange="changeItemsPerPage(this.value)">
+                            <option value="10" {{ limit == 10 ? 'selected' : '' }}>10 na stronę</option>
+                            <option value="20" {{ limit == 20 ? 'selected' : '' }}>20 na stronę</option>
+                            <option value="50" {{ limit == 50 ? 'selected' : '' }}>50 na stronę</option>
+                            <option value="100" {{ limit == 100 ? 'selected' : '' }}>100 na stronę</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="table-container">
+                        {% include 'customers/_table.html.twig' with {
+                            'customers': customers,
+                            'pagination': pagination,
+                            'filters': filters
+                        } %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Customer Details Slider -->
+<div id="customer-slider" class="slider-container">
+    <div class="slider-content">
+        <div class="slider-header">
+            <h5 class="slider-title">Szczegóły klienta</h5>
+            <button class="btn-close" onclick="closeSlider()"></button>
+        </div>
+        <div class="slider-body" id="slider-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+<script>
+function viewLeadDetails(leadId) {
+    // Open lead details in slider (same as on main leads page)
+    // Add parameter to hide preferences section when called from customer view
+    fetch(`/leads/${leadId}/details?hide_preferences=1`)
+        .then(response => response.text())
+        .then(html => {
+            // Create slider container if it doesn't exist
+            let sliderContainer = document.getElementById('lead-slider-container');
+            if (!sliderContainer) {
+                sliderContainer = document.createElement('div');
+                sliderContainer.id = 'lead-slider-container';
+                sliderContainer.style.position = 'fixed';
+                sliderContainer.style.top = '0';
+                sliderContainer.style.left = '0';
+                sliderContainer.style.width = '100%';
+                sliderContainer.style.height = '100%';
+                sliderContainer.style.zIndex = '9999';
+                document.body.appendChild(sliderContainer);
+            }
+            
+            // Use original HTML exactly like on leads page
+            sliderContainer.innerHTML = html;
+            
+            // Initialize HTMX for dynamically loaded content
+            if (typeof htmx !== 'undefined') {
+                htmx.process(sliderContainer);
+            }
+            
+            // Debug: Check if dropdown elements exist
+            console.log('Dropdown trigger:', sliderContainer.querySelector('#status-dropdown-trigger'));
+            console.log('Dropdown menu:', sliderContainer.querySelector('#status-dropdown-menu'));
+            
+            // Show the slider
+            const slider = sliderContainer.querySelector('#lead-details-slider');
+            const backdrop = sliderContainer.querySelector('#lead-slider-backdrop');
+            
+            if (slider && backdrop) {
+                slider.style.display = 'flex';
+                backdrop.style.display = 'block';
+            }
+            
+            // Re-initialize slider functionality
+            initializeLeadSlider(sliderContainer);
+        })
+        .catch(error => {
+            console.error('Error loading lead details:', error);
+            showToast('Błąd podczas ładowania szczegółów leada', 'error');
+        });
+}
+
+function initializeLeadSlider(sliderContainer) {
+    // Close slider functionality
+    const closeBtn = sliderContainer.querySelector('#close-slider-btn');
+    const backdrop = sliderContainer.querySelector('#lead-slider-backdrop');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            closeLeadSlider();
+        });
+    }
+    
+    if (backdrop) {
+        backdrop.addEventListener('click', function() {
+            closeLeadSlider();
+        });
+    }
+    
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeLeadSlider();
+        }
+    });
+    
+    // Status dropdown functionality - copied exactly from leads page
+    const statusDropdownTrigger = sliderContainer.querySelector('#status-dropdown-trigger');
+    const statusDropdownMenu = sliderContainer.querySelector('#status-dropdown-menu');
+    
+    if (statusDropdownTrigger && statusDropdownMenu) {
+        statusDropdownTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isVisible = statusDropdownMenu.style.display !== 'none';
+            statusDropdownMenu.style.display = isVisible ? 'none' : 'block';
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!statusDropdownTrigger.contains(e.target) && !statusDropdownMenu.contains(e.target)) {
+                statusDropdownMenu.style.display = 'none';
+            }
+        });
+    }
+}
+
+function closeLeadSlider() {
+    const sliderContainer = document.getElementById('lead-slider-container');
+    if (sliderContainer) {
+        const slider = sliderContainer.querySelector('#lead-details-slider');
+        const backdrop = sliderContainer.querySelector('#lead-slider-backdrop');
+        
+        if (slider) {
+            slider.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+        }
+        if (backdrop) {
+            backdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+        }
+        
+        setTimeout(() => {
+            sliderContainer.remove();
+        }, 200);
+    }
+}
+
+// Use the global loadDeleteModal function from app.js
+// No need to redefine it here
+
+function loadCustomerLeads(customerId) {
+    fetch(`/customers/${customerId}/leads`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('customer-leads-content').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading customer leads:', error);
+            showToast('Błąd podczas ładowania leadów klienta', 'error');
+        });
+}
+
+function clearPreferencesForm() {
+    const form = document.getElementById('preferences-form');
+    if (form) {
+        form.querySelector('#price_min').value = '';
+        form.querySelector('#price_max').value = '';
+        form.querySelector('#location').value = '';
+        form.querySelector('#city').value = '';
+    }
+}
+
+function submitPreferences(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const customerId = form.dataset.customerId;
+    const formData = new FormData(form);
+    
+    const data = {
+        price_min: formData.get('price_min') ? parseFloat(formData.get('price_min')) : null,
+        price_max: formData.get('price_max') ? parseFloat(formData.get('price_max')) : null,
+        location: formData.get('location'),
+        city: formData.get('city')
+    };
+    
+    fetch(`/customers/${customerId}/preferences`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'HX-Request': 'true'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            // JSON response (success or JSON error)
+            return response.json().then(result => {
+                if (result.success) {
+                    showToast('Preferencje zostały zaktualizowane', 'success');
+                    // Reload customer details
+                    fetch(`/customers/${customerId}`)
+                        .then(response => response.text())
+                        .then(html => {
+                            document.getElementById('slider-content').innerHTML = html;
+                        });
+                } else {
+                    showToast(result.error || 'Błąd podczas aktualizacji preferencji', 'error');
+                }
+            });
+        } else {
+            // HTML response (form with validation errors)
+            return response.text().then(html => {
+                // Replace the form with the error response
+                const formContainer = document.querySelector('#preferences-form');
+                if (formContainer) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    formContainer.outerHTML = tempDiv.innerHTML;
+                    
+                    // Re-initialize the form after replacement
+                    if (typeof initializePreferencesForm === 'function') {
+                        initializePreferencesForm();
+                    }
+                }
+                
+                // Extract error message from the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const errorDiv = doc.querySelector('.alert-danger');
+                if (errorDiv) {
+                    // Get the specific error message (skip the icon text)
+                    const errorText = errorDiv.querySelector('div');
+                    const errorMessage = errorText ? errorText.textContent.trim() : errorDiv.textContent.trim();
+                    showToast(errorMessage, 'error');
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Błąd podczas aktualizacji preferencji', 'error');
+    });
+}
+
+function togglePreferencesEdit() {
+    const display = document.getElementById('preferences-display');
+    const form = document.getElementById('preferences-form');
+    const btn = document.getElementById('edit-preferences-btn');
+    
+    if (form.style.display === 'none') {
+        display.style.display = 'none';
+        form.style.display = 'block';
+        btn.innerHTML = '<i class="bi bi-x me-1"></i>Anuluj';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-outline-secondary');
+    } else {
+        display.style.display = 'block';
+        form.style.display = 'none';
+        btn.innerHTML = '<i class="bi bi-pencil me-1"></i>Edytuj';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-outline-primary');
+    }
+}
+
+function refreshLeads(customerId) {
+    fetch(`/customers/${customerId}/leads`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('leads-section').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error refreshing leads:', error);
+        });
+}
+
+function toggleLeadDetails(leadId) {
+    const details = document.getElementById(`lead-details-${leadId}`);
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+    } else {
+        details.style.display = 'none';
+    }
+}
+
+function openLeadPage(leadId) {
+    window.open(`/leads/${leadId}`, '_blank');
+}
+
+// Auto-refresh stats every 30 seconds
+setInterval(function() {
+    refreshStats();
+}, 30000);
+
+function refreshStats() {
+    fetch('/customers/stats')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('stats-container').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error refreshing stats:', error);
+        });
+}
+
+function changeItemsPerPage(value) {
+    const url = new URL(window.location);
+    url.searchParams.set('limit', value);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+}
+
+function openCustomerDetails(customerId) {
+    fetch(`/customers/${customerId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('slider-content').innerHTML = html;
+            document.getElementById('customer-slider').classList.add('active');
+        })
+        .catch(error => {
+            console.error('Error loading customer details:', error);
+            showToast('Błąd podczas ładowania szczegółów klienta', 'error');
+        });
+}
+
+function closeSlider() {
+    document.getElementById('customer-slider').classList.remove('active');
+}
+
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    const toastId = 'toast-' + Date.now();
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-${type === 'error' ? 'exclamation-triangle' : 'check-circle'} text-${type === 'error' ? 'danger' : 'success'} me-2"></i>
+                <strong class="me-auto">${type === 'error' ? 'Błąd' : 'Sukces'}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+// Close slider when clicking outside
+document.addEventListener('click', function(event) {
+    const slider = document.getElementById('customer-slider');
+    if (slider.classList.contains('active') && !slider.contains(event.target)) {
+        closeSlider();
+    }
+});
+
+// Handle preferences form submission
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.target.id === 'preferences-form') {
+        if (event.detail.xhr.status === 200) {
+            // Success - reload customer details
+            const customerId = event.detail.target.dataset.customerId;
+            if (customerId) {
+                fetch(`/customers/${customerId}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('slider-content').innerHTML = html;
+                        showToast('Preferencje zostały zaktualizowane', 'success');
+                    });
+            }
+        } else {
+            showToast('Błąd podczas aktualizacji preferencji', 'error');
+        }
+    }
+});
+
+// Handle HTMX events
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.xhr.status >= 400) {
+        showToast('Wystąpił błąd podczas wykonywania operacji', 'error');
+    }
+});
+
+document.addEventListener('htmx:responseError', function(event) {
+    showToast('Wystąpił błąd podczas wykonywania operacji', 'error');
+});
+</script>
+
+<style>
+.slider-container {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: white;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    transition: right 0.3s ease;
+    z-index: 1050;
+    overflow-y: auto;
+}
+
+.slider-container.active {
+    right: 0;
+}
+
+.slider-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.slider-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.slider-title {
+    margin: 0;
+    flex: 1;
+}
+
+.slider-body {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .slider-container {
+        width: 100%;
+        right: -100%;
+    }
+}
+</style>
 {% endblock %}
 
 

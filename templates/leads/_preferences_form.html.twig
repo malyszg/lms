@@ -1,0 +1,88 @@
+{# Formularz preferencji klienta - używany przez HTMX #}
+<form id="preferences-form" 
+      hx-put="{{ path('lead_update_preferences', {'id': lead.id}) }}"
+      hx-target="this"
+      hx-swap="outerHTML"
+      hx-trigger="submit">
+    
+    {# Success/Error Messages #}
+    {% if success is defined %}
+        <div class="fluent-message-bar {{ success ? 'fluent-message-bar-success' : 'fluent-message-bar-error' }}" style="margin-bottom: var(--fluent-spacing-m);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                {% if success %}
+                    <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
+                {% else %}
+                    <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm3.5 10.5L8 7l-3.5 3.5L3 10l3.5-3.5L3 3l1.5-1.5L8 5l3.5-3.5L13 3l-3.5 3.5L13 10l-1.5 1.5z"/>
+                {% endif %}
+            </svg>
+            {{ message }}
+        </div>
+    {% endif %}
+
+    {# Validation Errors #}
+    {% if errors is defined and errors %}
+        <div class="fluent-message-bar fluent-message-bar-error" style="margin-bottom: var(--fluent-spacing-m);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm3.5 10.5L8 7l-3.5 3.5L3 10l3.5-3.5L3 3l1.5-1.5L8 5l3.5-3.5L13 3l-3.5 3.5L13 10l-1.5 1.5z"/>
+            </svg>
+            <div>
+                {% for field, error in errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="fluent-form-group">
+        <label for="price_min" class="fluent-label">Cena minimalna (PLN)</label>
+        <input type="number" 
+               class="fluent-input" 
+               id="price_min" 
+               name="price_min" 
+               step="0.01" 
+               min="0"
+               placeholder="np. 100000"
+               value="{{ customerPreferences.price_min ?? '' }}">
+    </div>
+    
+    <div class="fluent-form-group">
+        <label for="price_max" class="fluent-label">Cena maksymalna (PLN)</label>
+        <input type="number" 
+               class="fluent-input" 
+               id="price_max" 
+               name="price_max" 
+               step="0.01" 
+               min="0"
+               placeholder="np. 500000"
+               value="{{ customerPreferences.price_max ?? '' }}">
+    </div>
+    
+    <div class="fluent-form-group">
+        <label for="location" class="fluent-label">Lokalizacja</label>
+        <input type="text" 
+               class="fluent-input" 
+               id="location" 
+               name="location" 
+               maxlength="255"
+               placeholder="np. Centrum miasta, Osiedle XYZ"
+               value="{{ customerPreferences.location ?? '' }}">
+    </div>
+    
+    <div class="fluent-form-group">
+        <label for="city" class="fluent-label">Miasto</label>
+        <input type="text" 
+               class="fluent-input" 
+               id="city" 
+               name="city" 
+               maxlength="100"
+               placeholder="np. Warszawa, Kraków"
+               value="{{ customerPreferences.city ?? '' }}">
+    </div>
+    
+    <fluent-button type="submit" appearance="accent" style="width: 100%; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+            <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm3.5 5L7 10.5 5.5 9 4 10.5l3 3 6-6L11.5 6z"/>
+        </svg>
+        Zapisz preferencje
+    </fluent-button>
+</form>

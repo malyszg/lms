@@ -21,6 +21,7 @@ services:
     App\Leads\LeadRequestTransformerInterface: '@App\Leads\LeadRequestTransformer'
     App\ApiClient\CDPDeliveryServiceInterface: '@App\ApiClient\CDPDeliveryService'
     App\Service\LeadViewServiceInterface: '@App\Service\LeadViewService'
+    App\Service\CustomerViewServiceInterface: '@App\Service\CustomerViewService'
     App\Service\StatsServiceInterface: '@App\Service\StatsService'
     
     # Auth services

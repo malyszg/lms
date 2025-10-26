@@ -98,7 +98,9 @@ class LeadViewService implements LeadViewServiceInterface
             total: $total,
             lastPage: max(1, $lastPage),
             from: $total > 0 ? ($page - 1) * $limit + 1 : 0,
-            to: min($page * $limit, $total)
+            to: min($page * $limit, $total),
+            hasNext: $page < $lastPage,
+            hasPrevious: $page > 1
         );
         
         return new LeadsListApiResponse($leads, $pagination);

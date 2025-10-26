@@ -1,0 +1,301 @@
+<form id="customer-filters-form" 
+      hx-get="/customers/table" 
+      hx-target="#table-container"
+      hx-trigger="change delay:500ms from:input, change delay:500ms from:select, submit"
+      hx-params="*">
+    
+    <div class="row g-3">
+        <!-- Email Filter -->
+        <div class="col-md-3">
+            <label for="email" class="form-label">
+                <i class="bi bi-envelope me-1"></i>
+                Email
+            </label>
+            <input type="email" 
+                   class="form-control" 
+                   id="email" 
+                   name="email" 
+                   value="{{ filters.email ?? '' }}"
+                   placeholder="Wpisz email...">
+        </div>
+
+        <!-- Phone Filter -->
+        <div class="col-md-3">
+            <label for="phone" class="form-label">
+                <i class="bi bi-telephone me-1"></i>
+                Telefon
+            </label>
+            <input type="tel" 
+                   class="form-control" 
+                   id="phone" 
+                   name="phone" 
+                   value="{{ filters.phone ?? '' }}"
+                   placeholder="Wpisz telefon...">
+        </div>
+
+        <!-- Created From -->
+        <div class="col-md-3">
+            <label for="created_from" class="form-label">
+                <i class="bi bi-calendar me-1"></i>
+                Data od
+            </label>
+            <input type="date" 
+                   class="form-control" 
+                   id="created_from" 
+                   name="created_from" 
+                   value="{{ filters.createdFrom ? filters.createdFrom|date('Y-m-d') : '' }}">
+        </div>
+
+        <!-- Created To -->
+        <div class="col-md-3">
+            <label for="created_to" class="form-label">
+                <i class="bi bi-calendar me-1"></i>
+                Data do
+            </label>
+            <input type="date" 
+                   class="form-control" 
+                   id="created_to" 
+                   name="created_to" 
+                   value="{{ filters.createdTo ? filters.createdTo|date('Y-m-d') : '' }}">
+        </div>
+    </div>
+
+    <div class="row g-3 mt-2">
+        <!-- Min Leads -->
+        <div class="col-md-3">
+            <label for="min_leads" class="form-label">
+                <i class="bi bi-list-ul me-1"></i>
+                Min. liczba leadów
+            </label>
+            <input type="number" 
+                   class="form-control" 
+                   id="min_leads" 
+                   name="min_leads" 
+                   value="{{ filters.minLeads ?? '' }}"
+                   min="0"
+                   placeholder="0">
+        </div>
+
+        <!-- Max Leads -->
+        <div class="col-md-3">
+            <label for="max_leads" class="form-label">
+                <i class="bi bi-list-ul me-1"></i>
+                Max. liczba leadów
+            </label>
+            <input type="number" 
+                   class="form-control" 
+                   id="max_leads" 
+                   name="max_leads" 
+                   value="{{ filters.maxLeads ?? '' }}"
+                   min="0"
+                   placeholder="100">
+        </div>
+
+        <!-- Sort By -->
+        <div class="col-md-3">
+            <label for="sort" class="form-label">
+                <i class="bi bi-sort-alpha-down me-1"></i>
+                Sortuj według
+            </label>
+            <select class="form-select" id="sort" name="sort">
+                <option value="created_at" {{ filters.sort == 'created_at' ? 'selected' : '' }}>
+                    Data utworzenia
+                </option>
+                <option value="email" {{ filters.sort == 'email' ? 'selected' : '' }}>
+                    Email
+                </option>
+                <option value="phone" {{ filters.sort == 'phone' ? 'selected' : '' }}>
+                    Telefon
+                </option>
+                <option value="leads_count" {{ filters.sort == 'leads_count' ? 'selected' : '' }}>
+                    Liczba leadów
+                </option>
+            </select>
+        </div>
+
+        <!-- Order -->
+        <div class="col-md-3">
+            <label for="order" class="form-label">
+                <i class="bi bi-arrow-up-down me-1"></i>
+                Kolejność
+            </label>
+            <select class="form-select" id="order" name="order">
+                <option value="desc" {{ filters.order == 'desc' ? 'selected' : '' }}>
+                    Malejąco
+                </option>
+                <option value="asc" {{ filters.order == 'asc' ? 'selected' : '' }}>
+                    Rosnąco
+                </option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Filtruj
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Wyczyść filtry
+                    </button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Quick Filters -->
+                    <div class="btn-group" role="group">
+                        <button type="button" 
+                                class="btn btn-outline-info btn-sm"
+                                onclick="applyQuickFilter('today')"
+                                title="Klienci z dzisiaj">
+                            <i class="bi bi-calendar-day me-1"></i>
+                            Dzisiaj
+                        </button>
+                        <button type="button" 
+                                class="btn btn-outline-info btn-sm"
+                                onclick="applyQuickFilter('week')"
+                                title="Klienci z ostatniego tygodnia">
+                            <i class="bi bi-calendar-week me-1"></i>
+                            Tydzień
+                        </button>
+                        <button type="button" 
+                                class="btn btn-outline-info btn-sm"
+                                onclick="applyQuickFilter('month')"
+                                title="Klienci z ostatniego miesiąca">
+                            <i class="bi bi-calendar-month me-1"></i>
+                            Miesiąc
+                        </button>
+                    </div>
+
+                    <!-- Results Count -->
+                    <div class="text-muted">
+                        <small id="results-count">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Użyj filtrów aby zobaczyć wyniki
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+// Filter out empty form values before HTMX submits
+document.addEventListener('htmx:configRequest', function(event) {
+    // Check if this is a request to /customers/table
+    if (event.detail.path === '/customers/table' || event.detail.elt.closest('#customer-filters-form')) {
+        const params = event.detail.parameters;
+        // Remove empty values
+        for (const key in params) {
+            if (params.hasOwnProperty(key)) {
+                const value = params[key];
+                // Remove null, undefined, or empty string values
+                if (value === null || value === undefined || value === '') {
+                    delete params[key];
+                }
+            }
+        }
+    }
+});
+
+function clearFilters() {
+    // Navigate to the main customers page (reset everything)
+    window.location.href = '/customers';
+}
+
+function applyQuickFilter(period) {
+    const today = new Date();
+    let fromDate = new Date();
+    
+    switch(period) {
+        case 'today':
+            fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            break;
+        case 'week':
+            fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+            break;
+        case 'month':
+            fromDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            break;
+    }
+    
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    // Set the date filter
+    document.getElementById('created_from').value = formatDate(fromDate);
+    document.getElementById('created_to').value = formatDate(today);
+    
+    // Submit form
+    document.getElementById('customer-filters-form').dispatchEvent(new Event('submit'));
+}
+
+// Update results count when table is updated
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.target.id === 'table-container') {
+        const table = event.detail.target.querySelector('table');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            const count = rows.length;
+            const resultsCount = document.getElementById('results-count');
+            
+            if (count > 0) {
+                resultsCount.innerHTML = `<i class="bi bi-check-circle me-1"></i>Znaleziono ${count} klientów`;
+                resultsCount.className = 'text-success';
+            } else {
+                resultsCount.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Brak wyników';
+                resultsCount.className = 'text-warning';
+            }
+        }
+    }
+});
+
+// Validate date range
+document.getElementById('created_from').addEventListener('change', function() {
+    const fromDate = new Date(this.value);
+    const toDateInput = document.getElementById('created_to');
+    
+    if (toDateInput.value && fromDate > new Date(toDateInput.value)) {
+        toDateInput.value = this.value;
+    }
+});
+
+document.getElementById('created_to').addEventListener('change', function() {
+    const toDate = new Date(this.value);
+    const fromDateInput = document.getElementById('created_from');
+    
+    if (fromDateInput.value && toDate < new Date(fromDateInput.value)) {
+        fromDateInput.value = this.value;
+    }
+});
+
+// Validate leads range
+document.getElementById('min_leads').addEventListener('change', function() {
+    const minValue = parseInt(this.value) || 0;
+    const maxInput = document.getElementById('max_leads');
+    const maxValue = parseInt(maxInput.value) || 0;
+    
+    if (maxValue > 0 && minValue > maxValue) {
+        maxInput.value = minValue;
+    }
+});
+
+document.getElementById('max_leads').addEventListener('change', function() {
+    const maxValue = parseInt(this.value) || 0;
+    const minInput = document.getElementById('min_leads');
+    const minValue = parseInt(minInput.value) || 0;
+    
+    if (minValue > 0 && maxValue < minValue) {
+        minInput.value = maxValue;
+    }
+});
+</script>

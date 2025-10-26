@@ -19,7 +19,13 @@ class CustomerDetailDto
         public readonly ?string $firstName,
         public readonly ?string $lastName,
         public readonly DateTimeInterface $createdAt,
-        public readonly ?PreferencesDto $preferences,
-        public readonly array $leads
+        public readonly DateTimeInterface $updatedAt,
+        public readonly PreferencesDto $preferences,
+        public readonly array $leads, // LeadItemDto[]
+        public readonly int $totalLeads,
+        public readonly int $newLeads,
+        public readonly int $contactedLeads,
+        public readonly int $qualifiedLeads,
+        public readonly int $convertedLeads
     ) {}
 }

@@ -1,0 +1,404 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Szczegóły leada - LMS{% endblock %}
+
+{% block body %}
+<style>
+/* Custom styles only for lead details page */
+.lead-details-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+.status-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.info-card {
+    background: #fff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid #007bff;
+}
+
+.info-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-left-color: #0056b3;
+}
+
+.info-card .card-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+.info-card .card-header i {
+    font-size: 1.2em;
+}
+
+.property-card {
+    border-left-color: #28a745;
+}
+
+.property-card .card-header {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.metadata-card {
+    border-left-color: #6c757d;
+}
+
+.metadata-card .card-header {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.preferences-card {
+    border-left-color: #ffc107;
+}
+
+.preferences-card .card-header {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+}
+
+.actions-card {
+    border-left-color: #dc3545;
+}
+
+.actions-card .card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.status-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-right: 15px;
+}
+
+.status-new { background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; }
+.status-contacted { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; }
+.status-qualified { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; }
+.status-converted { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; }
+.status-rejected { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; }
+
+.value-highlight {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #495057;
+}
+
+.price-value {
+    color: #28a745;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.uuid-code {
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.btn-custom {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-custom:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+</style>
+
+<div class="lead-details-container">
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header Section -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h2 mb-1 text-primary">
+                            <i class="bi bi-person-badge me-2"></i>
+                            Szczegóły leada
+                        </h1>
+                        <p class="text-muted mb-0">Kompletne informacje o leadzie i kliencie</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-custom" onclick="history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Powrót
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Card -->
+                <div class="card status-card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="status-icon status-{{ lead.status }}">
+                                        {% set statusIcons = {
+                                            'new': 'bi-plus-circle-fill',
+                                            'contacted': 'bi-telephone-fill',
+                                            'qualified': 'bi-check-circle-fill',
+                                            'converted': 'bi-trophy-fill',
+                                            'rejected': 'bi-x-circle-fill'
+                                        } %}
+                                        <i class="{{ statusIcons[lead.status] ?? 'bi-question-circle-fill' }}"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="mb-1">{{ lead.statusLabel }}</h3>
+                                        <p class="text-muted mb-0">Status leada</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <div class="text-muted">
+                                    <small>UUID: <span class="uuid-code">{{ lead.leadUuid|slice(0, 13) }}...</span></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Customer Information -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card info-card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-person me-2"></i>
+                                    Informacje o kliencie
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Imię i nazwisko:</strong><br>
+                                    <span class="value-highlight">{{ lead.customer.firstName }} {{ lead.customer.lastName }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Email:</strong><br>
+                                    <a href="mailto:{{ lead.customer.email }}" class="text-decoration-none">
+                                        <i class="bi bi-envelope me-1"></i>{{ lead.customer.email }}
+                                    </a>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Telefon:</strong><br>
+                                    <a href="tel:{{ lead.customer.phone }}" class="text-decoration-none">
+                                        <i class="bi bi-telephone me-1"></i>{{ lead.customer.phone }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Property Information -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card info-card property-card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-house me-2"></i>
+                                    Informacje o nieruchomości
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if lead.property %}
+                                    <div class="mb-3">
+                                        <strong>Typ nieruchomości:</strong><br>
+                                        <span class="value-highlight">{{ lead.property.propertyType ?? 'Nie określono' }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Cena:</strong><br>
+                                        <span class="price-value">
+                                            {{ lead.property.price ? (lead.property.price|number_format(2, ',', ' ') ~ ' PLN') : 'Nie określono' }}
+                                        </span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Lokalizacja:</strong><br>
+                                        <span class="value-highlight">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ lead.property.location ?? 'Nie określono' }}
+                                        </span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Miasto:</strong><br>
+                                        <span class="value-highlight">{{ lead.property.city ?? 'Nie określono' }}</span>
+                                    </div>
+                                    {% if lead.property.developmentId %}
+                                    <div class="mb-3">
+                                        <strong>ID inwestycji:</strong><br>
+                                        <span class="uuid-code">{{ lead.property.developmentId }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if lead.property.partnerId %}
+                                    <div class="mb-3">
+                                        <strong>ID partnera:</strong><br>
+                                        <span class="uuid-code">{{ lead.property.partnerId }}</span>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-muted text-center py-3">
+                                        <i class="bi bi-info-circle fs-1 mb-2"></i>
+                                        <p class="mb-0">Brak informacji o nieruchomości</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lead Metadata -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card info-card metadata-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Metadane leada
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Aplikacja źródłowa:</strong><br>
+                                        <span class="value-highlight">
+                                            <i class="bi bi-app me-1"></i>{{ lead.applicationName }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>UUID:</strong><br>
+                                        <span class="uuid-code">{{ lead.leadUuid }}</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Data utworzenia:</strong><br>
+                                        <span class="value-highlight">
+                                            <i class="bi bi-calendar me-1"></i>{{ lead.createdAt|date('d.m.Y H:i:s') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Preferences -->
+                {% if customerPreferences %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card info-card preferences-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Preferencje klienta
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>Cena minimalna:</strong><br>
+                                        <span class="price-value">
+                                            {{ customerPreferences.price_min ? (customerPreferences.price_min|number_format(0, ',', ' ') ~ ' PLN') : 'Nie określono' }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Cena maksymalna:</strong><br>
+                                        <span class="price-value">
+                                            {{ customerPreferences.price_max ? (customerPreferences.price_max|number_format(0, ',', ' ') ~ ' PLN') : 'Nie określono' }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Lokalizacja:</strong><br>
+                                        <span class="value-highlight">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ customerPreferences.location ?? 'Nie określono' }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Miasto:</strong><br>
+                                        <span class="value-highlight">{{ customerPreferences.city ?? 'Nie określono' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card info-card actions-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Akcje
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-primary btn-custom" onclick="history.back()">
+                                        <i class="bi bi-arrow-left me-1"></i>
+                                        Powrót
+                                    </button>
+                                    {% if is_granted('ROLE_CALL_CENTER') %}
+                                    <button class="btn btn-warning btn-custom" onclick="showToast('Funkcja edycji statusu będzie dostępna wkrótce', 'info')">
+                                        <i class="bi bi-pencil me-1"></i>
+                                        Zmień status
+                                    </button>
+                                    <button class="btn btn-danger btn-custom" onclick="showToast('Funkcja usuwania będzie dostępna wkrótce', 'info')">
+                                        <i class="bi bi-trash me-1"></i>
+                                        Usuń leada
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showToast(message, type = 'info') {
+    // Enhanced toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : (type === 'success' ? 'success' : 'info')} alert-dismissible fade show position-fixed`;
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.borderRadius = '8px';
+    toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    toast.innerHTML = `
+        <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
+</script>
+{% endblock %}

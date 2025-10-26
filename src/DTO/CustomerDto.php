@@ -18,6 +18,7 @@ class CustomerDto
         public readonly string $phone,
         public readonly ?string $firstName,
         public readonly ?string $lastName,
-        public readonly DateTimeInterface $createdAt
+        public readonly DateTimeInterface $createdAt,
+        public readonly int $leadsCount = 0
     ) {}
 }

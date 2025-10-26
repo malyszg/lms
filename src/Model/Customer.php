@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Model;
 
 use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * Customer entity
@@ -19,6 +21,7 @@ class Customer
     private ?string $lastName = null;
     private DateTimeInterface $createdAt;
     private DateTimeInterface $updatedAt;
+    private Collection $leads;
 
     public function __construct(
         string $email,
@@ -30,6 +33,7 @@ class Customer
         $this->phone = $phone;
         $this->firstName = $firstName;
         $this->lastName = $lastName;
+        $this->leads = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -100,6 +104,34 @@ class Customer
     public function setUpdatedAt(DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Lead>
+     */
+    public function getLeads(): Collection
+    {
+        return $this->leads;
+    }
+
+    public function addLead(Lead $lead): self
+    {
+        if (!$this->leads->contains($lead)) {
+            $this->leads->add($lead);
+            $lead->setCustomer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLead(Lead $lead): self
+    {
+        if ($this->leads->removeElement($lead)) {
+            // Note: In many-to-one relationship, we don't set customer to null
+            // The lead will be removed from the collection but keep its customer reference
+        }
+
         return $this;
     }
 

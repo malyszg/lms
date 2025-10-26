@@ -280,7 +280,7 @@ function showToast(message, type) {
             ${message}
         </div>
         <button onclick="this.parentElement.remove()" 
-                style="background: transparent; border: none; cursor: pointer; color: inherit; padding: 4px;">
+                style="background: transparent; border: none; cursor: pointer; color: inherit; padding: 4px; z-index: 10; position: relative;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 6.586L5.707 4.293 4.293 5.707 6.586 8l-2.293 2.293 1.414 1.414L8 9.414l2.293 2.293 1.414-1.414L9.414 8l2.293-2.293-1.414-1.414L8 6.586z"/>
             </svg>
@@ -289,14 +289,14 @@ function showToast(message, type) {
 
     toastContainer.appendChild(toast);
 
-    // Auto-remove toast after delay (except for errors)
-    if (type !== 'error') {
-        setTimeout(() => {
+    // Auto-remove toast after delay
+    setTimeout(() => {
+        if (toast.parentNode) { // Check if toast still exists
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(100%)';
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
+        }
+    }, 5000); // 5 seconds for all toast types including errors
 }
 
 // Session management - last check timestamp for new leads
@@ -378,22 +378,33 @@ window.closeLeadDetails = function() {
         if (container) {
             container.innerHTML = '';
         }
+        
+        // Also check for customers page slider container
+        const leadSliderContainer = document.getElementById('lead-slider-container');
+        if (leadSliderContainer) {
+            leadSliderContainer.remove();
+        }
     }, 200);
 }
 
 // Lead deletion modal handling
 window.loadDeleteModal = function(leadId, leadUuid) {
+    console.log('loadDeleteModal called from app.js with leadId:', leadId, 'leadUuid:', leadUuid);
+    
     const modalContainer = document.getElementById('delete-modal-container');
     if (!modalContainer) {
         console.error('Delete modal container not found');
         return;
     }
 
+    console.log('Modal container found, loading modal content');
+
     // Load modal content via HTMX
     htmx.ajax('GET', `/leads/${leadId}/delete-modal`, {
         target: '#delete-modal-container',
         swap: 'innerHTML'
     }).then(() => {
+        console.log('Modal loaded successfully, setting up listeners');
         // Setup event listeners for the modal
         setupDeleteModalListeners(leadId);
     }).catch(error => {
@@ -404,13 +415,26 @@ window.loadDeleteModal = function(leadId, leadUuid) {
 
 // Setup event listeners for delete modal
 function setupDeleteModalListeners(leadId) {
+    console.log('setupDeleteModalListeners called from app.js for leadId:', leadId);
+    
     const modalElement = document.getElementById('deleteModal');
     const backdropElement = document.getElementById('delete-modal-backdrop');
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     const cancelBtn = document.getElementById('cancel-delete-btn');
     const closeBtn = document.getElementById('close-delete-modal-btn');
 
-    if (!modalElement || !confirmDeleteBtn) return;
+    console.log('Modal elements found in app.js:', {
+        modalElement: !!modalElement,
+        backdropElement: !!backdropElement,
+        confirmDeleteBtn: !!confirmDeleteBtn,
+        cancelBtn: !!cancelBtn,
+        closeBtn: !!closeBtn
+    });
+
+    if (!modalElement || !confirmDeleteBtn) {
+        console.error('Required modal elements not found in app.js');
+        return;
+    }
 
     // Close modal function
     function closeModal() {
@@ -449,28 +473,122 @@ function setupDeleteModalListeners(leadId) {
 
     // Handle successful deletion
     confirmDeleteBtn.addEventListener('htmx:afterRequest', function(event) {
+        console.log('HTMX afterRequest event fired in app.js:', event.detail.xhr.status);
         if (event.detail.xhr.status === 200) {
+            console.log('Lead deleted successfully in app.js, handling cleanup');
+            
             // Remove lead row from table
             const leadRow = document.getElementById(`lead-row-${leadId}`);
             if (leadRow) {
+                console.log('Removing lead row from table');
                 leadRow.style.animation = 'fadeOut 300ms ease-out';
                 setTimeout(() => {
                     leadRow.remove();
                 }, 300);
+            } else {
+                console.log('Lead row not found in table');
             }
 
-            // Close details slider if open
-            const slider = document.getElementById('lead-details-slider');
-            const sliderBackdrop = document.getElementById('lead-slider-backdrop');
-            if (slider && sliderBackdrop) {
+            // Close details slider if open (check both leads page and customers page)
+            // Check for customers page slider FIRST (most specific)
+            const customersSliderContainer = document.getElementById('lead-slider-container');
+            
+            console.log('Checking for sliders:', {
+                customersSliderContainer: !!customersSliderContainer
+            });
+            
+            if (customersSliderContainer) {
+                console.log('Closing lead details slider (customers page)');
+                
+                // Animate out the slider
+                const sliderInContainer = customersSliderContainer.querySelector('#lead-details-slider');
+                const backdrop = customersSliderContainer.querySelector('#lead-slider-backdrop');
+                
+                if (sliderInContainer) {
+                    sliderInContainer.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+                }
+                if (backdrop) {
+                    backdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+                }
+                
+                // Remove the container after animation
+                setTimeout(() => {
+                    console.log('Removing lead-slider-container');
+                    customersSliderContainer.remove();
+                    
+                    // Reload customers page to refresh the list
+                    window.location.reload();
+                }, 200);
+            } else {
+                // Check for leads page slider
+                const slider = document.getElementById('lead-details-slider');
+                const sliderBackdrop = document.getElementById('lead-slider-backdrop');
+                
+                console.log('Checking for leads page sliders:', {
+                    slider: !!slider,
+                    sliderBackdrop: !!sliderBackdrop
+                });
+                
+                if (slider && sliderBackdrop) {
+                console.log('Closing lead details slider (leads page)');
+                console.log('Slider element:', slider);
+                console.log('SliderBackdrop element:', sliderBackdrop);
+                
                 slider.style.animation = 'slideOutRight 200ms cubic-bezier(0.33, 0, 0.67, 1)';
                 sliderBackdrop.style.animation = 'fadeOut 200ms cubic-bezier(0.33, 0, 0.67, 1)';
+                
                 setTimeout(() => {
-                    const container = document.getElementById('slider-container');
-                    if (container) {
-                        container.innerHTML = '';
+                    // Check for customers page slider container first
+                    const leadSliderContainer = document.getElementById('lead-slider-container');
+                    if (leadSliderContainer) {
+                        console.log('Found lead-slider-container, removing it');
+                        leadSliderContainer.remove();
+                    } else {
+                        // Check for leads page slider container
+                        const container = document.getElementById('slider-container');
+                        console.log('Looking for slider-container:', container);
+                        if (container) {
+                            console.log('Clearing slider-container content');
+                            container.innerHTML = '';
+                            
+                            // Also hide the slider itself
+                            if (slider) {
+                                console.log('Hiding slider element');
+                                slider.style.display = 'none';
+                            }
+                            if (sliderBackdrop) {
+                                console.log('Hiding slider backdrop');
+                                sliderBackdrop.style.display = 'none';
+                            }
+                        } else {
+                            console.log('Neither slider container found');
+                            console.log('All elements with "slider" in ID:', 
+                                Array.from(document.querySelectorAll('[id*="slider"]')).map(el => el.id));
+                            
+                            // Force remove any slider elements
+                            const allSliders = document.querySelectorAll('[id*="slider"]');
+                            console.log('Force removing all slider elements:', allSliders.length);
+                            allSliders.forEach(sliderEl => {
+                                console.log('Removing slider:', sliderEl.id);
+                                sliderEl.remove();
+                            });
+                        }
                     }
                 }, 200);
+                }
+            }
+            
+            // Fallback cleanup - if we're on customers page and no slider was found, ensure cleanup
+            if (!customersSliderContainer && window.location.pathname.includes('/customers')) {
+                console.log('On customers page, ensuring any leftover sliders are cleaned up');
+                const leadSliderContainer = document.getElementById('lead-slider-container');
+                if (leadSliderContainer) {
+                    leadSliderContainer.remove();
+                }
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
             }
 
             // Close modal first

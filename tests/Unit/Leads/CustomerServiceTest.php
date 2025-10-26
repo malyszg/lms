@@ -39,14 +39,14 @@ class CustomerServiceTest extends TestCase
             lastName: 'Doe'
         );
 
-        // Mock repository query to return null (customer doesn't exist)
+        // Mock repository query to return empty array (customer doesn't exist)
         $query = $this->createMock(Query::class);
         $query->expects($this->once())
             ->method('setLockMode')
             ->willReturnSelf();
         $query->expects($this->once())
-            ->method('getOneOrNullResult')
-            ->willReturn(null);
+            ->method('getResult')
+            ->willReturn([]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->expects($this->once())
@@ -110,8 +110,8 @@ class CustomerServiceTest extends TestCase
             ->method('setLockMode')
             ->willReturnSelf();
         $query->expects($this->once())
-            ->method('getOneOrNullResult')
-            ->willReturn($existingCustomer);
+            ->method('getResult')
+            ->willReturn([$existingCustomer]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->expects($this->once())
@@ -168,8 +168,8 @@ class CustomerServiceTest extends TestCase
             ->method('setLockMode')
             ->willReturnSelf();
         $query->expects($this->once())
-            ->method('getOneOrNullResult')
-            ->willReturn($foundCustomer);
+            ->method('getResult')
+            ->willReturn([$foundCustomer]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->expects($this->once())
@@ -210,8 +210,8 @@ class CustomerServiceTest extends TestCase
             ->method('setLockMode')
             ->willReturnSelf();
         $query->expects($this->once())
-            ->method('getOneOrNullResult')
-            ->willReturn(null);
+            ->method('getResult')
+            ->willReturn([]);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->expects($this->once())

@@ -1,0 +1,215 @@
+<div class="row g-3">
+    <!-- Total Customers -->
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-1">Wszyscy klienci</h6>
+                        <h3 class="mb-0">{{ stats.totalCustomers }}</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="bi bi-people" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-white-50">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Łączna liczba klientów w systemie
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers with Leads -->
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-1">Z leadami</h6>
+                        <h3 class="mb-0">{{ stats.customersWithLeads }}</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="bi bi-list-ul" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-white-50">
+                        <i class="bi bi-percent me-1"></i>
+                        {% if stats.totalCustomers > 0 %}
+                            {{ ((stats.customersWithLeads / stats.totalCustomers) * 100)|round(1) }}% wszystkich klientów
+                        {% else %}
+                            0% wszystkich klientów
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers with Preferences -->
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-1">Z preferencjami</h6>
+                        <h3 class="mb-0">{{ stats.customersWithPreferences }}</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="bi bi-gear" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-white-50">
+                        <i class="bi bi-percent me-1"></i>
+                        {% if stats.totalCustomers > 0 %}
+                            {{ ((stats.customersWithPreferences / stats.totalCustomers) * 100)|round(1) }}% wszystkich klientów
+                        {% else %}
+                            0% wszystkich klientów
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Customers Today -->
+    <div class="col-md-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-1">Nowi dzisiaj</h6>
+                        <h3 class="mb-0">{{ stats.newCustomersToday }}</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="bi bi-calendar-day" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-white-50">
+                        <i class="bi bi-clock me-1"></i>
+                        Ostatnia aktualizacja: {{ "now"|date('H:i') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Stats Row -->
+<div class="row g-3 mt-2">
+    <!-- Conversion Rate -->
+    <div class="col-md-4">
+        <div class="card border-0 bg-light h-100">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-center align-items-center mb-2">
+                    <i class="bi bi-graph-up text-success me-2" style="font-size: 1.5rem;"></i>
+                    <h6 class="mb-0">Wskaźnik aktywności</h6>
+                </div>
+                <h4 class="text-success mb-1">
+                    {% if stats.totalCustomers > 0 %}
+                        {{ ((stats.customersWithLeads / stats.totalCustomers) * 100)|round(1) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h4>
+                <small class="text-muted">
+                    Klienci z aktywnymi leadami
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Leads per Customer -->
+    <div class="col-md-4">
+        <div class="card border-0 bg-light h-100">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-center align-items-center mb-2">
+                    <i class="bi bi-bar-chart text-info me-2" style="font-size: 1.5rem;"></i>
+                    <h6 class="mb-0">Średnia leadów</h6>
+                </div>
+                <h4 class="text-info mb-1">
+                    {% if stats.customersWithLeads > 0 %}
+                        {{ (stats.customersWithLeads / stats.customersWithLeads)|round(1) }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h4>
+                <small class="text-muted">
+                    Na klienta z leadami
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Growth Indicator -->
+    <div class="col-md-4">
+        <div class="card border-0 bg-light h-100">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-center align-items-center mb-2">
+                    <i class="bi bi-trending-up text-warning me-2" style="font-size: 1.5rem;"></i>
+                    <h6 class="mb-0">Wzrost dzienny</h6>
+                </div>
+                <h4 class="text-warning mb-1">
+                    {% if stats.newCustomersToday > 0 %}
+                        +{{ stats.newCustomersToday }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h4>
+                <small class="text-muted">
+                    Nowych klientów dzisiaj
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh indicator -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                <small>
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Statystyki odświeżają się automatycznie co 30 sekund
+                </small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" id="stats-spinner" style="display: none;">
+                    <span class="visually-hidden">Ładowanie...</span>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshStats()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Odśwież teraz
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show spinner during stats refresh
+document.addEventListener('htmx:beforeRequest', function(event) {
+    if (event.detail.target.id === 'stats-container') {
+        document.getElementById('stats-spinner').style.display = 'inline-block';
+    }
+});
+
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.target.id === 'stats-container') {
+        document.getElementById('stats-spinner').style.display = 'none';
+    }
+});
+
+document.addEventListener('htmx:responseError', function(event) {
+    if (event.detail.target.id === 'stats-container') {
+        document.getElementById('stats-spinner').style.display = 'none';
+        console.error('Error refreshing stats:', event.detail.xhr.status);
+    }
+});
+</script>

@@ -1,0 +1,281 @@
+<form id="preferences-form" 
+      data-customer-id="{{ customerId }}"
+      onsubmit="submitPreferences(event)">
+    
+    {# Success Message Only #}
+    {% if success is defined and success %}
+        <div class="alert alert-success" role="alert" style="margin-bottom: 1.5rem;">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ message }}
+        </div>
+    {% endif %}
+    
+    {# Validation Errors #}
+    {% if errors is defined and errors %}
+        <div class="alert alert-danger" role="alert" style="margin-bottom: 1.5rem;">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <div>
+                {% for field, error in errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="row g-3">
+        <!-- Price Range -->
+        <div class="col-12">
+            <h6 class="text-muted mb-3">
+                <i class="bi bi-currency-dollar me-2"></i>
+                Zakres cenowy
+            </h6>
+        </div>
+        
+        <div class="col-6">
+            <label for="price_min" class="form-label">Cena minimalna (zł)</label>
+            <div class="input-group">
+                <span class="input-group-text">od</span>
+                <input type="number" 
+                       class="form-control" 
+                       id="price_min" 
+                       name="price_min" 
+                       value="{{ preferences.priceMin ?? '' }}"
+                       min="0"
+                       step="1"
+                       placeholder="0">
+            </div>
+            <div class="invalid-feedback" id="price_min_error"></div>
+        </div>
+        
+        <div class="col-6">
+            <label for="price_max" class="form-label">Cena maksymalna (zł)</label>
+            <div class="input-group">
+                <span class="input-group-text">do</span>
+                <input type="number" 
+                       class="form-control" 
+                       id="price_max" 
+                       name="price_max" 
+                       value="{{ preferences.priceMax ?? '' }}"
+                       min="0"
+                       step="1"
+                       placeholder="1000000">
+            </div>
+            <div class="invalid-feedback" id="price_max_error"></div>
+        </div>
+
+        <!-- Location -->
+        <div class="col-12">
+            <h6 class="text-muted mb-3 mt-4">
+                <i class="bi bi-geo-alt me-2"></i>
+                Lokalizacja
+            </h6>
+        </div>
+        
+        <div class="col-12">
+            <label for="location" class="form-label">Lokalizacja</label>
+            <input type="text" 
+                   class="form-control" 
+                   id="location" 
+                   name="location" 
+                   value="{{ preferences.location ?? '' }}"
+                   maxlength="255"
+                   placeholder="np. Centrum miasta, Dzielnica X">
+            <div class="form-text">Maksymalnie 255 znaków</div>
+            <div class="invalid-feedback" id="location_error"></div>
+        </div>
+        
+        <div class="col-12">
+            <label for="city" class="form-label">Miasto</label>
+            <input type="text" 
+                   class="form-control" 
+                   id="city" 
+                   name="city" 
+                   value="{{ preferences.city ?? '' }}"
+                   maxlength="100"
+                   placeholder="np. Warszawa, Kraków">
+            <div class="form-text">Maksymalnie 100 znaków</div>
+            <div class="invalid-feedback" id="city_error"></div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <button type="button" 
+                        class="btn btn-outline-secondary"
+                        onclick="togglePreferencesEdit()">
+                    <i class="bi bi-x me-1"></i>
+                    Anuluj
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" 
+                            class="btn btn-outline-warning"
+                            onclick="clearPreferencesForm()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Wyczyść
+                    </button>
+                    <button type="submit" 
+                            class="btn btn-primary"
+                            id="save-preferences-btn">
+                        <i class="bi bi-check me-1"></i>
+                        Zapisz preferencje
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Loading indicator -->
+<div id="preferences-loading" class="text-center py-3" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Zapisywanie...</span>
+    </div>
+    <p class="mt-2 text-muted">Zapisywanie preferencji...</p>
+</div>
+
+<script>
+// Initialize the preferences form
+function initializePreferencesForm() {
+    // Get references to form elements
+    const form = document.getElementById('preferences-form');
+    if (!form) return;
+    
+    const priceMinInput = document.getElementById('price_min');
+    const priceMaxInput = document.getElementById('price_max');
+    const locationInput = document.getElementById('location');
+    const cityInput = document.getElementById('city');
+    
+    if (!priceMinInput || !priceMaxInput || !locationInput || !cityInput) return;
+    
+// Form validation
+function validatePreferencesForm() {
+    let isValid = true;
+    const errors = {};
+    
+    // Clear previous errors
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+    
+    const priceMin = parseFloat(document.getElementById('price_min').value) || 0;
+    const priceMax = parseFloat(document.getElementById('price_max').value) || 0;
+    const location = document.getElementById('location').value.trim();
+    const city = document.getElementById('city').value.trim();
+    
+    // Validate price range
+    if (priceMin > 0 && priceMax > 0 && priceMin >= priceMax) {
+        errors.price_max = 'Cena maksymalna musi być większa od minimalnej';
+        document.getElementById('price_max').classList.add('is-invalid');
+        document.getElementById('price_max_error').textContent = errors.price_max;
+        isValid = false;
+    }
+    
+    if (priceMin < 0) {
+        errors.price_min = 'Cena minimalna nie może być ujemna';
+        document.getElementById('price_min').classList.add('is-invalid');
+        document.getElementById('price_min_error').textContent = errors.price_min;
+        isValid = false;
+    }
+    
+    if (priceMax < 0) {
+        errors.price_max = 'Cena maksymalna nie może być ujemna';
+        document.getElementById('price_max').classList.add('is-invalid');
+        document.getElementById('price_max_error').textContent = errors.price_max;
+        isValid = false;
+    }
+    
+    // Validate string lengths
+    if (location.length > 255) {
+        errors.location = 'Lokalizacja nie może przekraczać 255 znaków';
+        document.getElementById('location').classList.add('is-invalid');
+        document.getElementById('location_error').textContent = errors.location;
+        isValid = false;
+    }
+    
+    if (city.length > 100) {
+        errors.city = 'Miasto nie może przekraczać 100 znaków';
+        document.getElementById('city').classList.add('is-invalid');
+        document.getElementById('city_error').textContent = errors.city;
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+// Clear form
+function clearPreferencesForm() {
+    document.getElementById('price_min').value = '';
+    document.getElementById('price_max').value = '';
+    document.getElementById('location').value = '';
+    document.getElementById('city').value = '';
+    
+    // Clear validation errors
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+}
+
+// Real-time validation
+priceMinInput.addEventListener('input', function() {
+    const priceMin = parseFloat(this.value) || 0;
+    const priceMax = parseFloat(document.getElementById('price_max').value) || 0;
+    
+    if (priceMin > 0 && priceMax > 0 && priceMin >= priceMax) {
+        document.getElementById('price_max').classList.add('is-invalid');
+        document.getElementById('price_max_error').textContent = 'Cena maksymalna musi być większa od minimalnej';
+    } else {
+        document.getElementById('price_max').classList.remove('is-invalid');
+        document.getElementById('price_max_error').textContent = '';
+    }
+});
+
+priceMaxInput.addEventListener('input', function() {
+    const priceMin = parseFloat(document.getElementById('price_min').value) || 0;
+    const priceMax = parseFloat(this.value) || 0;
+    
+    if (priceMin > 0 && priceMax > 0 && priceMin >= priceMax) {
+        this.classList.add('is-invalid');
+        document.getElementById('price_max_error').textContent = 'Cena maksymalna musi być większa od minimalnej';
+    } else {
+        this.classList.remove('is-invalid');
+        document.getElementById('price_max_error').textContent = '';
+    }
+});
+
+// Character counters
+locationInput.addEventListener('input', function() {
+    const maxLength = 255;
+    const currentLength = this.value.length;
+    
+    if (currentLength > maxLength) {
+        this.classList.add('is-invalid');
+        document.getElementById('location_error').textContent = `Przekroczono limit o ${currentLength - maxLength} znaków`;
+    } else {
+        this.classList.remove('is-invalid');
+        document.getElementById('location_error').textContent = '';
+    }
+});
+
+cityInput.addEventListener('input', function() {
+    const maxLength = 100;
+    const currentLength = this.value.length;
+    
+    if (currentLength > maxLength) {
+        this.classList.add('is-invalid');
+        document.getElementById('city_error').textContent = `Przekroczono limit o ${currentLength - maxLength} znaków`;
+    } else {
+        this.classList.remove('is-invalid');
+        document.getElementById('city_error').textContent = '';
+    }
+});
+
+// Form submission is handled by the onsubmit="submitPreferences(event)" attribute
+// which calls the submitPreferences() function in customers/index.html.twig
+
+// Initialize form when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePreferencesForm);
+} else {
+    initializePreferencesForm();
+}
+</script>

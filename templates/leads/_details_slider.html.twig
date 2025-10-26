@@ -179,7 +179,8 @@
             </div>
         </div>
         
-        {# Customer Preferences (Editable) #}
+        {# Customer Preferences (Editable) - Hidden when called from customer view #}
+        {% if not hidePreferences %}
         <div class="fluent-slider-section">
             <h3 class="fluent-slider-section-title">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-warning)" style="vertical-align: middle;">
@@ -189,6 +190,7 @@
             </h3>
             {% include 'leads/_preferences_form.html.twig' %}
         </div>
+        {% endif %}
         
         {# Actions #}
         <div class="fluent-slider-section">
@@ -268,7 +270,7 @@
                     
                     <!-- Delete Button -->
                     <fluent-button appearance="outline"
-                            onclick="loadDeleteModal({{ lead.id }}, '{{ lead.leadUuid }}')"
+                            onclick="console.log('Delete button clicked in slider for lead:', {{ lead.id }}); loadDeleteModal({{ lead.id }}, '{{ lead.leadUuid }}')"
                             style="width: 100%; justify-content: center; color: var(--fluent-error); border-color: var(--fluent-error);">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
                             <path d="M6 2h4v1H6V2zm7 1h-3V2a1 1 0 00-1-1H7a1 1 0 00-1 1v1H3v1h1v9a1 1 0 001 1h6a1 1 0 001-1V4h1V3zM5 4h6v9H5V4z"/>

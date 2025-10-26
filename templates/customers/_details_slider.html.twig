@@ -1,0 +1,225 @@
+<!-- Customer Basic Information -->
+<div class="customer-details">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-person-circle me-2"></i>
+                {% if customer.firstName or customer.lastName %}
+                    {{ customer.firstName }} {{ customer.lastName }}
+                {% else %}
+                    {{ customer.email }}
+                {% endif %}
+            </h4>
+            <p class="text-muted mb-0">
+                <i class="bi bi-hash me-1"></i>
+                ID: {{ customer.id }}
+            </p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary">
+                <i class="bi bi-calendar me-1"></i>
+                {{ customer.createdAt|date('d.m.Y') }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="card-title mb-0">
+                <i class="bi bi-telephone me-2"></i>
+                Informacje kontaktowe
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-envelope text-primary me-3"></i>
+                        <div>
+                            <strong>Email:</strong><br>
+                            <a href="mailto:{{ customer.email }}" class="text-decoration-none">
+                                {{ customer.email }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-telephone text-success me-3"></i>
+                        <div>
+                            <strong>Telefon:</strong><br>
+                            <a href="tel:{{ customer.phone }}" class="text-decoration-none">
+                                {{ customer.phone }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% if customer.firstName or customer.lastName %}
+                <div class="col-12">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person text-info me-3"></i>
+                        <div>
+                            <strong>Imię i nazwisko:</strong><br>
+                            {% if customer.firstName %}{{ customer.firstName }}{% endif %}
+                            {% if customer.lastName %} {{ customer.lastName }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Preferences -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+                <i class="bi bi-gear me-2"></i>
+                Preferencje nieruchomościowe
+            </h6>
+            {% if isEditable %}
+            <button type="button" 
+                    class="btn btn-outline-primary btn-sm"
+                    onclick="togglePreferencesEdit()"
+                    id="edit-preferences-btn">
+                <i class="bi bi-pencil me-1"></i>
+                Edytuj
+            </button>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div id="preferences-display">
+                {% if customer.preferences.priceMin or customer.preferences.priceMax or customer.preferences.location or customer.preferences.city %}
+                    <div class="row g-3">
+                        {% if customer.preferences.priceMin or customer.preferences.priceMax %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-currency-dollar text-warning me-3"></i>
+                                <div>
+                                    <strong>Zakres cenowy:</strong><br>
+                                    {% if customer.preferences.priceMin and customer.preferences.priceMax %}
+                                        {{ customer.preferences.priceMin|number_format(0, ',', ' ') }} - {{ customer.preferences.priceMax|number_format(0, ',', ' ') }} zł
+                                    {% elseif customer.preferences.priceMin %}
+                                        Od {{ customer.preferences.priceMin|number_format(0, ',', ' ') }} zł
+                                    {% elseif customer.preferences.priceMax %}
+                                        Do {{ customer.preferences.priceMax|number_format(0, ',', ' ') }} zł
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if customer.preferences.location %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-geo-alt text-danger me-3"></i>
+                                <div>
+                                    <strong>Lokalizacja:</strong><br>
+                                    {{ customer.preferences.location }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if customer.preferences.city %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-building text-info me-3"></i>
+                                <div>
+                                    <strong>Miasto:</strong><br>
+                                    {{ customer.preferences.city }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-gear" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Brak zdefiniowanych preferencji</p>
+                        {% if isEditable %}
+                        <small>Kliknij "Edytuj" aby dodać preferencje</small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Preferences Form (Hidden by default) -->
+            {% if isEditable %}
+            <div id="preferences-form" style="display: none;">
+                {% include 'customers/_preferences_form.html.twig' with {
+                    'preferences': customer.preferences,
+                    'customerId': customer.id
+                } %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Customer Leads Summary -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+                <i class="bi bi-list-ul me-2"></i>
+                Podsumowanie leadów
+            </h6>
+            <span class="badge bg-primary">{{ customer.totalLeads }} leadów</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="text-center">
+                        <div class="h4 text-primary mb-1">{{ customer.newLeads }}</div>
+                        <small class="text-muted">Nowe</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center">
+                        <div class="h4 text-info mb-1">{{ customer.contactedLeads }}</div>
+                        <small class="text-muted">Skontaktowane</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center">
+                        <div class="h4 text-warning mb-1">{{ customer.qualifiedLeads }}</div>
+                        <small class="text-muted">Zakwalifikowane</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center">
+                        <div class="h4 text-success mb-1">{{ customer.convertedLeads }}</div>
+                        <small class="text-muted">Przekonwertowane</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Leads List -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+                <i class="bi bi-list me-2"></i>
+                Lista leadów
+            </h6>
+            <button type="button" 
+                    class="btn btn-outline-primary btn-sm"
+                    onclick="loadCustomerLeads({{ customer.id }})">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Odśwież
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div id="customer-leads-content">
+                {% include 'customers/_leads_section.html.twig' with {
+                    'leads': customer.leads,
+                    'totalLeads': customer.totalLeads,
+                    'newLeads': customer.newLeads,
+                    'contactedLeads': customer.contactedLeads,
+                    'qualifiedLeads': customer.qualifiedLeads,
+                    'convertedLeads': customer.convertedLeads
+                } %}
+            </div>
+        </div>
+    </div>
+</div>

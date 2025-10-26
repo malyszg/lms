@@ -15,7 +15,9 @@ class PaginationDto
         public readonly int $total,
         public readonly int $lastPage,
         public readonly int $from,
-        public readonly int $to
+        public readonly int $to,
+        public readonly bool $hasNext,
+        public readonly bool $hasPrevious
     ) {}
     
     /**
@@ -33,6 +35,8 @@ class PaginationDto
         
         $from = $total > 0 ? ($currentPage - 1) * $perPage + 1 : 0;
         $to = min($currentPage * $perPage, $total);
+        $hasNext = $currentPage < $lastPage;
+        $hasPrevious = $currentPage > 1;
         
         return new self(
             currentPage: $currentPage,
@@ -40,7 +44,9 @@ class PaginationDto
             total: $total,
             lastPage: $lastPage,
             from: $from,
-            to: $to
+            to: $to,
+            hasNext: $hasNext,
+            hasPrevious: $hasPrevious
         );
     }
 }

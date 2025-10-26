@@ -6,6 +6,9 @@ namespace App\Leads;
 
 use App\DTO\CreateCustomerDto;
 use App\DTO\UpdatePreferencesRequest;
+use App\DTO\CustomerDetailDto;
+use App\DTO\CustomerStatsDto;
+use App\DTO\CustomerFiltersDto;
 use App\Model\Customer;
 
 /**
@@ -62,6 +65,32 @@ interface CustomerServiceInterface
      * @return array|null
      */
     public function getCustomerPreferences(int $customerId): ?array;
+
+    /**
+     * Get customers list with filters and pagination
+     *
+     * @param CustomerFiltersDto $filters
+     * @param int $page
+     * @param int $limit
+     * @return array{customers: array, pagination: array}
+     */
+    public function getCustomersList(CustomerFiltersDto $filters, int $page = 1, int $limit = 20): array;
+
+    /**
+     * Get customer details with leads and preferences
+     *
+     * @param int $customerId
+     * @return CustomerDetailDto
+     * @throws \App\Exception\CustomerNotFoundException
+     */
+    public function getCustomerDetails(int $customerId): CustomerDetailDto;
+
+    /**
+     * Get customer statistics
+     *
+     * @return CustomerStatsDto
+     */
+    public function getCustomerStats(): CustomerStatsDto;
 }
 
 

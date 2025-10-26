@@ -35,7 +35,7 @@ class LeadDetailsController extends AbstractController
     ) {}
     
     #[Route('/leads/{id}/details', name: 'lead_details', methods: ['GET'])]
-    public function details(int $id): Response
+    public function details(int $id, Request $request): Response
     {
         // Find lead by ID with related entities
         $lead = $this->entityManager->getRepository(Lead::class)
@@ -105,9 +105,13 @@ class LeadDetailsController extends AbstractController
             ] : null,
         ];
         
+        // Check if preferences should be hidden (when called from customer view)
+        $hidePreferences = $request->query->getBoolean('hide_preferences', false);
+        
         return $this->render('leads/_details_slider.html.twig', [
             'lead' => $leadData,
-            'customerPreferences' => $customerPreferences
+            'customerPreferences' => $customerPreferences,
+            'hidePreferences' => $hidePreferences
         ]);
     }
     

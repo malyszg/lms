@@ -6,9 +6,15 @@ namespace App\Leads;
 
 use App\DTO\CreateCustomerDto;
 use App\DTO\UpdatePreferencesRequest;
+use App\DTO\CustomerDetailDto;
+use App\DTO\CustomerStatsDto;
+use App\DTO\CustomerFiltersDto;
+use App\DTO\PreferencesDto;
+use App\DTO\LeadItemDto;
 use App\Exception\CustomerNotFoundException;
 use App\Exception\ValidationException;
 use App\Model\Customer;
+use App\Model\Lead;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
 use Psr\Log\LoggerInterface;
@@ -70,7 +76,7 @@ class CustomerService implements CustomerServiceInterface
 
         try {
             // Use pessimistic write lock for deduplication
-            return $repository->createQueryBuilder('c')
+            $customers = $repository->createQueryBuilder('c')
                 ->where('c.email = :email')
                 ->andWhere('c.phone = :phone')
                 ->setParameter('email', $email)
@@ -78,10 +84,9 @@ class CustomerService implements CustomerServiceInterface
                 ->setMaxResults(1)
                 ->getQuery()
                 ->setLockMode(LockMode::PESSIMISTIC_WRITE)
-                ->getOneOrNullResult();
-        } catch (\Doctrine\ORM\NoResultException $e) {
-            // No result is expected behavior, return null
-            return null;
+                ->getResult();
+            
+            return $customers ? $customers[0] : null;
         } catch (\Doctrine\DBAL\Exception $e) {
             // Re-throw database exceptions with more context
             throw new \RuntimeException(
@@ -252,7 +257,7 @@ class CustomerService implements CustomerServiceInterface
     private function getCurrentPreferences(int $customerId): ?array
     {
         try {
-            $sql = 'SELECT price_min, price_max, location, city FROM customer_preferences WHERE customer_id = :customer_id';
+            $sql = 'SELECT price_min, price_max, location, city FROM customer_preferences WHERE customer_id = :customer_id LIMIT 1';
             $result = $this->entityManager->getConnection()->executeQuery($sql, ['customer_id' => $customerId]);
             
             $data = $result->fetchAssociative();
@@ -260,11 +265,12 @@ class CustomerService implements CustomerServiceInterface
         } catch (\Exception $e) {
             if ($this->logger !== null) {
                 $this->logger->error('Failed to get current preferences', [
+                    'customer_id' => $customerId,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
-            throw $e;
+            return null;
         }
     }
 
@@ -327,6 +333,327 @@ class CustomerService implements CustomerServiceInterface
     public function getCustomerPreferences(int $customerId): ?array
     {
         return $this->getCurrentPreferences($customerId);
+    }
+
+    /**
+     * Get customers list with filters and pagination
+     *
+     * @param CustomerFiltersDto $filters
+     * @param int $page
+     * @param int $limit
+     * @return array{customers: array, pagination: array}
+     */
+    public function getCustomersList(CustomerFiltersDto $filters, int $page = 1, int $limit = 20): array
+    {
+        // Validate and sanitize parameters
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit)); // Limit between 1 and 100
+        
+        $offset = ($page - 1) * $limit;
+        
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('c')
+            ->from(Customer::class, 'c')
+            ->leftJoin(Lead::class, 'l', 'WITH', 'l.customer = c')
+            ->groupBy('c.id');
+
+        // Apply filters
+        if ($filters->email !== null) {
+            $qb->andWhere('c.email LIKE :email')
+               ->setParameter('email', '%' . $filters->email . '%');
+        }
+
+        if ($filters->phone !== null) {
+            $qb->andWhere('c.phone LIKE :phone')
+               ->setParameter('phone', '%' . $filters->phone . '%');
+        }
+
+        if ($filters->createdFrom !== null) {
+            $qb->andWhere('c.createdAt >= :createdFrom')
+               ->setParameter('createdFrom', $filters->createdFrom);
+        }
+
+        if ($filters->createdTo !== null) {
+            // Add time to include the entire day
+            $endOfDay = \DateTime::createFromFormat('Y-m-d H:i:s', $filters->createdTo->format('Y-m-d') . ' 23:59:59');
+            $qb->andWhere('c.createdAt <= :createdTo')
+               ->setParameter('createdTo', $endOfDay);
+        }
+
+        if ($filters->minLeads !== null || $filters->maxLeads !== null) {
+            $havingConditions = [];
+            $parameters = [];
+            
+            if ($filters->minLeads !== null) {
+                $havingConditions[] = 'COUNT(l.id) >= :minLeads';
+                $parameters['minLeads'] = $filters->minLeads;
+            }
+            
+            if ($filters->maxLeads !== null) {
+                $havingConditions[] = 'COUNT(l.id) <= :maxLeads';
+                $parameters['maxLeads'] = $filters->maxLeads;
+            }
+            
+            $qb->having(implode(' AND ', $havingConditions));
+            
+            foreach ($parameters as $key => $value) {
+                $qb->setParameter($key, $value);
+            }
+        }
+
+        // Apply sorting
+        $allowedSorts = ['created_at', 'email', 'phone', 'leads_count'];
+        $sort = in_array($filters->sort, $allowedSorts) ? $filters->sort : 'created_at';
+        $order = in_array($filters->order, ['asc', 'desc']) ? $filters->order : 'desc';
+
+        if ($sort === 'leads_count') {
+            $qb->orderBy('COUNT(l.id)', $order);
+        } else {
+            // Map database field names to entity property names
+            $fieldMapping = [
+                'created_at' => 'createdAt',
+                'email' => 'email',
+                'phone' => 'phone'
+            ];
+            $entityField = $fieldMapping[$sort] ?? $sort;
+            $qb->orderBy('c.' . $entityField, $order);
+        }
+
+        // Get total count for pagination
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT c.id)');
+        
+        try {
+            $totalCount = (int) $countQb->getQuery()->getSingleScalarResult();
+        } catch (\Doctrine\ORM\NoResultException | \Doctrine\ORM\NonUniqueResultException $e) {
+            // If no result is found (e.g., no customers match filters), default to 0
+            $totalCount = 0;
+        }
+
+        // Apply pagination
+        $qb->setFirstResult($offset)
+           ->setMaxResults($limit);
+
+        $customers = $qb->getQuery()->getResult();
+        
+        // Ensure customers is always an array
+        if ($customers === null) {
+            $customers = [];
+        }
+
+        // Convert to DTOs
+        $customerDtos = [];
+        foreach ($customers as $customer) {
+            // Count leads for this customer
+            $leadsCountQb = $this->entityManager->getRepository(Lead::class)
+                ->createQueryBuilder('l')
+                ->select('COUNT(l.id)')
+                ->where('l.customer = :customer')
+                ->setParameter('customer', $customer);
+            
+            try {
+                $leadsCount = (int) $leadsCountQb->getQuery()->getSingleScalarResult();
+            } catch (\Doctrine\ORM\NoResultException | \Doctrine\ORM\NonUniqueResultException $e) {
+                $leadsCount = 0;
+            }
+
+            $customerDtos[] = new \App\DTO\CustomerDto(
+                $customer->getId(),
+                $customer->getEmail(),
+                $customer->getPhone(),
+                $customer->getFirstName(),
+                $customer->getLastName(),
+                $customer->getCreatedAt(),
+                (int) $leadsCount
+            );
+        }
+
+        $totalPages = max(1, (int) ceil($totalCount / $limit));
+        
+        // Ensure page is not greater than total pages
+        $page = min($page, $totalPages);
+
+        return [
+            'customers' => $customerDtos,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_items' => $totalCount,
+                'items_per_page' => $limit,
+                'has_next' => $page < $totalPages,
+                'has_previous' => $page > 1
+            ]
+        ];
+    }
+
+    /**
+     * Get customer details with leads and preferences
+     *
+     * @param int $customerId
+     * @return CustomerDetailDto
+     * @throws CustomerNotFoundException
+     */
+    public function getCustomerDetails(int $customerId): CustomerDetailDto
+    {
+        $customer = $this->entityManager->getRepository(Customer::class)->find($customerId);
+        if (!$customer) {
+            throw new CustomerNotFoundException($customerId);
+        }
+
+        // Get preferences
+        $preferencesData = $this->getCurrentPreferences($customerId);
+        $preferences = $preferencesData ? new PreferencesDto(
+            $preferencesData['price_min'] !== null ? (float) $preferencesData['price_min'] : null,
+            $preferencesData['price_max'] !== null ? (float) $preferencesData['price_max'] : null,
+            $preferencesData['location'],
+            $preferencesData['city']
+        ) : new PreferencesDto(null, null, null, null);
+
+        // Get leads
+        $leads = $this->entityManager->getRepository(Lead::class)
+            ->createQueryBuilder('l')
+            ->where('l.customer = :customer')
+            ->setParameter('customer', $customer)
+            ->orderBy('l.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $leadDtos = [];
+        $newLeads = 0;
+        $contactedLeads = 0;
+        $qualifiedLeads = 0;
+        $convertedLeads = 0;
+
+        foreach ($leads as $lead) {
+            $customerDto = new \App\DTO\CustomerDto(
+                $lead->getCustomer()->getId(),
+                $lead->getCustomer()->getEmail(),
+                $lead->getCustomer()->getPhone(),
+                $lead->getCustomer()->getFirstName(),
+                $lead->getCustomer()->getLastName(),
+                $lead->getCustomer()->getCreatedAt()
+            );
+
+            $propertyDto = $lead->getProperty() ? new \App\DTO\PropertyDto(
+                (string) $lead->getProperty()->getId(),
+                null, // developmentId
+                null, // partnerId
+                null, // propertyType
+                $lead->getProperty()->getPrice(),
+                $lead->getProperty()->getLocation(),
+                $lead->getProperty()->getCity()
+            ) : new \App\DTO\PropertyDto(null, null, null, null, null, null, null);
+
+            $leadDtos[] = new LeadItemDto(
+                $lead->getId(),
+                $lead->getLeadUuid(),
+                $lead->getStatus(),
+                LeadItemDto::getStatusLabel($lead->getStatus()),
+                $lead->getCreatedAt(),
+                $customerDto,
+                $lead->getApplicationName(),
+                $propertyDto,
+                'pending' // CDP delivery status - placeholder
+            );
+
+            // Count leads by status
+            switch ($lead->getStatus()) {
+                case 'new':
+                    $newLeads++;
+                    break;
+                case 'contacted':
+                    $contactedLeads++;
+                    break;
+                case 'qualified':
+                    $qualifiedLeads++;
+                    break;
+                case 'converted':
+                    $convertedLeads++;
+                    break;
+            }
+        }
+
+        return new CustomerDetailDto(
+            $customer->getId(),
+            $customer->getEmail(),
+            $customer->getPhone(),
+            $customer->getFirstName(),
+            $customer->getLastName(),
+            $customer->getCreatedAt(),
+            $customer->getUpdatedAt(),
+            $preferences,
+            $leadDtos,
+            count($leads),
+            $newLeads,
+            $contactedLeads,
+            $qualifiedLeads,
+            $convertedLeads
+        );
+    }
+
+    /**
+     * Get customer statistics
+     *
+     * @return CustomerStatsDto
+     */
+    public function getCustomerStats(): CustomerStatsDto
+    {
+        // Total customers
+        $totalCustomersQb = $this->entityManager->getRepository(Customer::class)
+            ->createQueryBuilder('c')
+            ->select('COUNT(c.id)');
+        
+        try {
+            $totalCustomers = (int) $totalCustomersQb->getQuery()->getSingleScalarResult();
+        } catch (\Doctrine\ORM\NoResultException | \Doctrine\ORM\NonUniqueResultException $e) {
+            $totalCustomers = 0;
+        }
+
+        // Customers with leads
+        $customersWithLeadsQb = $this->entityManager->getRepository(Customer::class)
+            ->createQueryBuilder('c')
+            ->select('COUNT(DISTINCT c.id)')
+            ->join(Lead::class, 'l', 'WITH', 'l.customer = c');
+        
+        try {
+            $customersWithLeads = (int) $customersWithLeadsQb->getQuery()->getSingleScalarResult();
+        } catch (\Doctrine\ORM\NoResultException | \Doctrine\ORM\NonUniqueResultException $e) {
+            $customersWithLeads = 0;
+        }
+
+        // Customers with preferences
+        try {
+            $preferencesResult = $this->entityManager->getConnection()
+                ->executeQuery('SELECT COUNT(DISTINCT customer_id) as count FROM customer_preferences')
+                ->fetchAssociative();
+            $customersWithPreferences = $preferencesResult ? (int) $preferencesResult['count'] : 0;
+        } catch (\Exception $e) {
+            if ($this->logger !== null) {
+                $this->logger->warning('Failed to get customers with preferences', ['error' => $e->getMessage()]);
+            }
+            $customersWithPreferences = 0;
+        }
+
+        // New customers today
+        $today = new \DateTime('today');
+        $newCustomersTodayQb = $this->entityManager->getRepository(Customer::class)
+            ->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.createdAt >= :today')
+            ->setParameter('today', $today);
+        
+        try {
+            $newCustomersToday = (int) $newCustomersTodayQb->getQuery()->getSingleScalarResult();
+        } catch (\Doctrine\ORM\NoResultException | \Doctrine\ORM\NonUniqueResultException $e) {
+            $newCustomersToday = 0;
+        }
+
+        return new CustomerStatsDto(
+            (int) $totalCustomers,
+            (int) $customersWithLeads,
+            (int) $customersWithPreferences,
+            (int) $newCustomersToday
+        );
     }
 }
 

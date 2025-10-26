@@ -24,6 +24,8 @@
             </options>
         </field>
 
+        <one-to-many field="leads" target-entity="App\Model\Lead" mapped-by="customer"/>
+
         <unique-constraints>
             <unique-constraint name="unique_email_phone" columns="email,phone"/>
         </unique-constraints>
