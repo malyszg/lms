@@ -51,7 +51,7 @@ class LeadService implements LeadServiceInterface
         ?string $userAgent = null
     ): CreateLeadResponse {
         // Start transaction
-        $this->entityManager->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
 
         try {
             // Check for duplicate UUID
@@ -86,7 +86,7 @@ class LeadService implements LeadServiceInterface
             $this->eventService->logLeadCreated($lead, $ipAddress, $userAgent);
 
             // Commit transaction
-            $this->entityManager->commit();
+            $this->entityManager->getConnection()->commit();
 
             // Step 5: Send to CDP systems (async via RabbitMQ)
             // Publish message to RabbitMQ queue - processing happens in background
@@ -133,7 +133,7 @@ class LeadService implements LeadServiceInterface
 
         } catch (\Exception $e) {
             // Rollback on any error
-            $this->entityManager->rollback();
+            $this->entityManager->getConnection()->rollback();
             throw $e;
         }
     }
@@ -179,7 +179,7 @@ class LeadService implements LeadServiceInterface
         ?string $userAgent = null
     ): void {
         // Start transaction
-        $this->entityManager->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
 
         try {
             // Find lead by UUID
@@ -204,7 +204,7 @@ class LeadService implements LeadServiceInterface
             $this->entityManager->flush();
 
             // Commit transaction
-            $this->entityManager->commit();
+            $this->entityManager->getConnection()->commit();
 
             $this->logger?->info('Lead deleted successfully', [
                 'lead_uuid' => $leadUuid,
@@ -214,7 +214,7 @@ class LeadService implements LeadServiceInterface
 
         } catch (\Exception $e) {
             // Rollback on any error
-            $this->entityManager->rollback();
+            $this->entityManager->getConnection()->rollback();
             
             $this->logger?->error('Failed to delete lead', [
                 'lead_uuid' => $leadUuid,
@@ -330,7 +330,7 @@ class LeadService implements LeadServiceInterface
         }
 
         // Start transaction
-        $this->entityManager->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
 
         try {
             // Find lead by UUID
@@ -361,7 +361,7 @@ class LeadService implements LeadServiceInterface
             );
 
             // Commit transaction
-            $this->entityManager->commit();
+            $this->entityManager->getConnection()->commit();
 
             // Log success
             if ($this->logger !== null) {
@@ -377,7 +377,7 @@ class LeadService implements LeadServiceInterface
 
         } catch (\Exception $e) {
             // Rollback transaction on any error
-            $this->entityManager->rollback();
+            $this->entityManager->getConnection()->rollback();
 
             // Log error
             if ($this->logger !== null) {

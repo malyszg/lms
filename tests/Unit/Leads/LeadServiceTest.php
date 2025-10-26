@@ -19,6 +19,7 @@ use App\Leads\LeadService;
 use App\Model\Customer;
 use App\Model\Lead;
 use App\Model\LeadProperty;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -42,6 +43,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class LeadServiceTest extends TestCase
 {
     private EntityManagerInterface&MockObject $entityManager;
+    private Connection&MockObject $connection;
     private CustomerServiceInterface&MockObject $customerService;
     private LeadPropertyServiceInterface&MockObject $propertyService;
     private EventServiceInterface&MockObject $eventService;
@@ -57,6 +59,7 @@ class LeadServiceTest extends TestCase
     {
         // Create mocks for all dependencies
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->connection = $this->createMock(Connection::class);
         $this->customerService = $this->createMock(CustomerServiceInterface::class);
         $this->propertyService = $this->createMock(LeadPropertyServiceInterface::class);
         $this->eventService = $this->createMock(EventServiceInterface::class);
@@ -65,6 +68,9 @@ class LeadServiceTest extends TestCase
         $this->messageBus = $this->createMock(MessageBusInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->leadRepository = $this->createMock(EntityRepository::class);
+
+        // Mock EntityManager to return Connection
+        $this->entityManager->method('getConnection')->willReturn($this->connection);
 
         // Initialize service with mocked dependencies
         $this->leadService = new LeadService(
@@ -180,13 +186,13 @@ class LeadServiceTest extends TestCase
         $this->setupRepositoryMock($existingLead);
 
         // Mock transaction handling
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
             ->method('beginTransaction');
 
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
-            ->method('rollback');
+            ->method('rollBack');
 
         // Customer service should NOT be called (early return)
         $this->customerService
@@ -221,13 +227,13 @@ class LeadServiceTest extends TestCase
             ->willThrowException(new \RuntimeException('Database error'));
 
         // Mock transaction handling
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
             ->method('beginTransaction');
 
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
-            ->method('rollback');
+            ->method('rollBack');
 
         // Commit should NOT be called
         $this->entityManager
@@ -275,13 +281,13 @@ class LeadServiceTest extends TestCase
             ->willThrowException(new \RuntimeException('Property creation failed'));
 
         // Mock transaction handling
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
             ->method('beginTransaction');
 
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
-            ->method('rollback');
+            ->method('rollBack');
 
         // Commit should NOT be called
         $this->entityManager
@@ -684,7 +690,7 @@ class LeadServiceTest extends TestCase
      */
     private function setupSuccessfulTransactionMocks(): void
     {
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
             ->method('beginTransaction');
 
@@ -719,7 +725,7 @@ class LeadServiceTest extends TestCase
                 }
             });
 
-        $this->entityManager
+        $this->connection
             ->expects($this->once())
             ->method('commit');
     }

@@ -11,7 +11,9 @@ use App\Leads\EventServiceInterface;
 use App\Leads\LeadService;
 use App\Model\Event;
 use App\Model\Lead;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -22,15 +24,20 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class LeadServiceUpdateStatusTest extends TestCase
 {
     private LeadService $leadService;
-    private EntityManagerInterface $entityManager;
+    private EntityManagerInterface&MockObject $entityManager;
+    private Connection&MockObject $connection;
     private EventServiceInterface $eventService;
     private LoggerInterface $logger;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->connection = $this->createMock(Connection::class);
         $this->eventService = $this->createMock(EventServiceInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        
+        // Mock EntityManager to return Connection
+        $this->entityManager->method('getConnection')->willReturn($this->connection);
 
         $this->leadService = new LeadService(
             $this->entityManager,
@@ -77,9 +84,9 @@ class LeadServiceUpdateStatusTest extends TestCase
         $this->leadService->method('findByUuid')->willReturn($lead);
 
         // Expect transaction methods
-        $this->entityManager->expects($this->once())->method('beginTransaction');
-        $this->entityManager->expects($this->once())->method('commit');
-        $this->entityManager->expects($this->never())->method('rollback');
+        $this->connection->expects($this->once())->method('beginTransaction');
+        $this->connection->expects($this->once())->method('commit');
+        $this->connection->expects($this->never())->method('rollBack');
 
         // Expect lead update
         $lead->expects($this->once())->method('setStatus')->with('contacted');
@@ -144,9 +151,9 @@ class LeadServiceUpdateStatusTest extends TestCase
         $this->leadService->method('findByUuid')->willReturn(null);
 
         // Expect transaction methods
-        $this->entityManager->expects($this->once())->method('beginTransaction');
-        $this->entityManager->expects($this->once())->method('rollback');
-        $this->entityManager->expects($this->never())->method('commit');
+        $this->connection->expects($this->once())->method('beginTransaction');
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
 
         // Expect error logging
         $this->logger->expects($this->once())
@@ -187,10 +194,10 @@ class LeadServiceUpdateStatusTest extends TestCase
         $this->leadService->method('findByUuid')->willReturn($lead);
 
         // Mock database error
-        $this->entityManager->expects($this->once())->method('beginTransaction');
+        $this->connection->expects($this->once())->method('beginTransaction');
         $this->entityManager->expects($this->once())->method('flush')->willThrowException(new \Exception('Database error'));
-        $this->entityManager->expects($this->once())->method('rollback');
-        $this->entityManager->expects($this->never())->method('commit');
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
 
         // Expect error logging
         $this->logger->expects($this->once())
@@ -241,9 +248,9 @@ class LeadServiceUpdateStatusTest extends TestCase
             $this->leadService->method('findByUuid')->willReturn($lead);
 
             // Expect transaction methods
-            $this->entityManager->expects($this->once())->method('beginTransaction');
-            $this->entityManager->expects($this->once())->method('commit');
-            $this->entityManager->expects($this->never())->method('rollback');
+            $this->connection->expects($this->once())->method('beginTransaction');
+            $this->connection->expects($this->once())->method('commit');
+            $this->connection->expects($this->never())->method('rollBack');
 
             // Expect lead update
             $lead->expects($this->once())->method('setStatus')->with($status);

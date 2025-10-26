@@ -127,7 +127,7 @@ class CustomerService implements CustomerServiceInterface
         }
 
         // Start transaction
-        $this->entityManager->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
 
         try {
             // Find customer
@@ -159,7 +159,7 @@ class CustomerService implements CustomerServiceInterface
             );
 
             // Commit transaction
-            $this->entityManager->commit();
+            $this->entityManager->getConnection()->commit();
 
             // Log success
             if ($this->logger !== null) {
@@ -175,7 +175,7 @@ class CustomerService implements CustomerServiceInterface
 
         } catch (\Exception $e) {
             // Rollback transaction on any error
-            $this->entityManager->rollback();
+            $this->entityManager->getConnection()->rollback();
 
             // Log error
             if ($this->logger !== null) {
