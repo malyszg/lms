@@ -44,6 +44,18 @@ jobs:
         echo "APP_DEBUG=true" >> $GITHUB_ENV
         echo "APP_SECRET=ci-test-secret-key-for-symfony-cache-clear" >> $GITHUB_ENV
         echo "MESSENGER_TRANSPORT_DSN=doctrine://default" >> $GITHUB_ENV
+        echo "CDP_SALESMANAGO_ENABLED=false" >> $GITHUB_ENV
+        echo "CDP_SALESMANAGO_URL=https://test-salesmanago.com" >> $GITHUB_ENV
+        echo "CDP_SALESMANAGO_API_KEY=test-api-key" >> $GITHUB_ENV
+        echo "CDP_MURAPOL_ENABLED=false" >> $GITHUB_ENV
+        echo "CDP_MURAPOL_URL=https://test-murapol.com" >> $GITHUB_ENV
+        echo "CDP_MURAPOL_API_KEY=test-api-key" >> $GITHUB_ENV
+        echo "CDP_DOMDEVELOPMENT_ENABLED=false" >> $GITHUB_ENV
+        echo "CDP_DOMDEVELOPMENT_URL=https://test-domdevelopment.com" >> $GITHUB_ENV
+        echo "CDP_DOMDEVELOPMENT_API_KEY=test-api-key" >> $GITHUB_ENV
+        echo "GEMINI_API_KEY=test-api-key-for-ci" >> $GITHUB_ENV
+        echo "GEMINI_MODEL=gemini-2.0-flash" >> $GITHUB_ENV
+        echo "GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: composer install --no-progress --prefer-dist --optimize-autoloader
@@ -88,6 +100,18 @@ jobs:
         export APP_ENV="test"
         export APP_DEBUG="true"
         export MESSENGER_TRANSPORT_DSN="doctrine://default"
+        export CDP_SALESMANAGO_ENABLED="false"
+        export CDP_SALESMANAGO_URL="https://test-salesmanago.com"
+        export CDP_SALESMANAGO_API_KEY="test-api-key"
+        export CDP_MURAPOL_ENABLED="false"
+        export CDP_MURAPOL_URL="https://test-murapol.com"
+        export CDP_MURAPOL_API_KEY="test-api-key"
+        export CDP_DOMDEVELOPMENT_ENABLED="false"
+        export CDP_DOMDEVELOPMENT_URL="https://test-domdevelopment.com"
+        export CDP_DOMDEVELOPMENT_API_KEY="test-api-key"
+        export GEMINI_API_KEY="test-api-key-for-ci"
+        export GEMINI_MODEL="gemini-2.0-flash"
+        export GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com"
         vendor/bin/phpunit tests/Unit --coverage-text --coverage-html coverage/unit --coverage-clover coverage/unit/clover.xml
 
     - name: Run functional tests
@@ -96,6 +120,18 @@ jobs:
         export APP_ENV="test"
         export APP_DEBUG="true"
         export MESSENGER_TRANSPORT_DSN="doctrine://default"
+        export CDP_SALESMANAGO_ENABLED="false"
+        export CDP_SALESMANAGO_URL="https://test-salesmanago.com"
+        export CDP_SALESMANAGO_API_KEY="test-api-key"
+        export CDP_MURAPOL_ENABLED="false"
+        export CDP_MURAPOL_URL="https://test-murapol.com"
+        export CDP_MURAPOL_API_KEY="test-api-key"
+        export CDP_DOMDEVELOPMENT_ENABLED="false"
+        export CDP_DOMDEVELOPMENT_URL="https://test-domdevelopment.com"
+        export CDP_DOMDEVELOPMENT_API_KEY="test-api-key"
+        export GEMINI_API_KEY="test-api-key-for-ci"
+        export GEMINI_MODEL="gemini-2.0-flash"
+        export GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com"
         vendor/bin/phpunit tests/Functional --coverage-text --coverage-html coverage/functional --coverage-clover coverage/functional/clover.xml
 
     - name: Upload test coverage reports

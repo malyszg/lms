@@ -28,6 +28,15 @@
         <env name="GEMINI_API_KEY" value="test-api-key-for-phpunit"/>
         <env name="GEMINI_MODEL" value="gemini-2.0-flash"/>
         <env name="GEMINI_API_BASE_URL" value="https://generativelanguage.googleapis.com"/>
+        <env name="CDP_SALESMANAGO_ENABLED" value="false"/>
+        <env name="CDP_SALESMANAGO_URL" value="https://test-salesmanago.com"/>
+        <env name="CDP_SALESMANAGO_API_KEY" value="test-api-key"/>
+        <env name="CDP_MURAPOL_ENABLED" value="false"/>
+        <env name="CDP_MURAPOL_URL" value="https://test-murapol.com"/>
+        <env name="CDP_MURAPOL_API_KEY" value="test-api-key"/>
+        <env name="CDP_DOMDEVELOPMENT_ENABLED" value="false"/>
+        <env name="CDP_DOMDEVELOPMENT_URL" value="https://test-domdevelopment.com"/>
+        <env name="CDP_DOMDEVELOPMENT_API_KEY" value="test-api-key"/>
     </php>
 
     <testsuites>
