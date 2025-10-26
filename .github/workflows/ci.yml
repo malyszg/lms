@@ -41,7 +41,9 @@ jobs:
         echo "TEST_DATABASE_URL=mysql://lms_user:lms_password@127.0.0.1:3306/lms_db_test?serverVersion=9.4&charset=utf8mb4" >> $GITHUB_ENV
         echo "TEST_MYSQL_HOST=127.0.0.1" >> $GITHUB_ENV
         echo "APP_ENV=test" >> $GITHUB_ENV
+        echo "APP_DEBUG=true" >> $GITHUB_ENV
         echo "APP_SECRET=ci-test-secret-key-for-symfony-cache-clear" >> $GITHUB_ENV
+        echo "MESSENGER_TRANSPORT_DSN=doctrine://default" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: composer install --no-progress --prefer-dist --optimize-autoloader
@@ -84,12 +86,16 @@ jobs:
       run: |
         export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
         export APP_ENV="test"
+        export APP_DEBUG="true"
+        export MESSENGER_TRANSPORT_DSN="doctrine://default"
         vendor/bin/phpunit tests/Unit --coverage-text --coverage-html coverage/unit --coverage-clover coverage/unit/clover.xml
 
     - name: Run functional tests
       run: |
         export DATABASE_URL="${{ env.TEST_DATABASE_URL }}"
         export APP_ENV="test"
+        export APP_DEBUG="true"
+        export MESSENGER_TRANSPORT_DSN="doctrine://default"
         vendor/bin/phpunit tests/Functional --coverage-text --coverage-html coverage/functional --coverage-clover coverage/functional/clover.xml
 
     - name: Upload test coverage reports
