@@ -84,5 +84,14 @@ interface LeadServiceInterface
         ?string $ipAddress = null,
         ?string $userAgent = null
     ): Lead;
+
+    /**
+     * Send lead to CDP systems (async via RabbitMQ)
+     * This method is called by CDPLeadMessageHandler after message is received from queue
+     *
+     * @param Lead $lead
+     * @return void
+     */
+    public function sendLeadToCDP(Lead $lead): void;
 }
 

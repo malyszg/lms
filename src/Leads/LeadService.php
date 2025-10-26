@@ -11,9 +11,11 @@ use App\DTO\UpdateLeadRequest;
 use App\Exception\LeadAlreadyExistsException;
 use App\Exception\LeadNotFoundException;
 use App\Exception\ValidationException;
+use App\Message\CDPLeadMessage;
 use App\Model\Lead;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Lead service implementation
@@ -29,6 +31,7 @@ class LeadService implements LeadServiceInterface
         private readonly EventServiceInterface $eventService,
         private readonly CDPDeliveryServiceInterface $cdpDeliveryService,
         private readonly LeadScoringServiceInterface $leadScoringService,
+        private readonly MessageBusInterface $messageBus,
         private readonly ?LoggerInterface $logger = null
     ) {}
 
@@ -85,13 +88,23 @@ class LeadService implements LeadServiceInterface
             // Commit transaction
             $this->entityManager->commit();
 
-            // Step 5: Send to CDP systems (after successful commit)
-            // In production: This should be async via RabbitMQ
+            // Step 5: Send to CDP systems (async via RabbitMQ)
+            // Publish message to RabbitMQ queue - processing happens in background
             try {
-                $this->cdpDeliveryService->sendLeadToCDP($lead);
+                $message = new CDPLeadMessage($lead->getId(), $lead->getLeadUuid());
+                $this->messageBus->dispatch($message);
+                
+                $this->logger?->info('CDP delivery message queued', [
+                    'lead_id' => $lead->getId(),
+                    'lead_uuid' => $lead->getLeadUuid(),
+                ]);
             } catch (\Exception $e) {
-                // CDP delivery failure shouldn't fail the lead creation
-                // Error is already logged in CDPDeliveryService
+                // RabbitMQ publishing failure shouldn't fail the lead creation
+                $this->logger?->error('Failed to queue CDP delivery message', [
+                    'lead_id' => $lead->getId(),
+                    'lead_uuid' => $lead->getLeadUuid(),
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             // Step 6: Score lead with AI (after successful commit)
@@ -376,6 +389,38 @@ class LeadService implements LeadServiceInterface
                 ]);
             }
 
+            throw $e;
+        }
+    }
+
+    /**
+     * Send lead to CDP systems (called by CDPLeadMessageHandler)
+     * This method is invoked asynchronously after message is received from RabbitMQ queue
+     *
+     * @param Lead $lead
+     * @return void
+     */
+    public function sendLeadToCDP(Lead $lead): void
+    {
+        try {
+            $this->logger?->info('Sending lead to CDP systems', [
+                'lead_id' => $lead->getId(),
+                'lead_uuid' => $lead->getLeadUuid(),
+            ]);
+
+            $this->cdpDeliveryService->sendLeadToCDP($lead);
+
+            $this->logger?->info('Lead sent to CDP systems successfully', [
+                'lead_id' => $lead->getId(),
+                'lead_uuid' => $lead->getLeadUuid(),
+            ]);
+        } catch (\Exception $e) {
+            // Errors are already logged in CDPDeliveryService
+            $this->logger?->error('Failed to send lead to CDP systems', [
+                'lead_id' => $lead->getId(),
+                'lead_uuid' => $lead->getLeadUuid(),
+                'error' => $e->getMessage(),
+            ]);
             throw $e;
         }
     }

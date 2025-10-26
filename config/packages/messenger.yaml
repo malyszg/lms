@@ -1,0 +1,16 @@
+framework:
+    messenger:
+        # Use RabbitMQ for async message processing
+        transports:
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 5000
+                    multiplier: 2
+                    max_delay: 30000
+
+        routing:
+            # Route messages to async transport
+            'App\Message\CDPLeadMessage': async
+

@@ -7,8 +7,8 @@ namespace App\DTO;
 use DateTimeInterface;
 
 /**
- * Retry delivery response DTO
- * Based on failed_deliveries table with additional message field
+ * Retry Delivery Response DTO
+ * Response for POST /api/failed-deliveries/{id}/retry
  */
 class RetryDeliveryResponse
 {

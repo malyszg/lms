@@ -28,6 +28,7 @@ class FailedDelivery
     {
         $this->lead = $lead;
         $this->cdpSystemName = $cdpSystemName;
+        $lead->addFailedDelivery($this);
     }
 
     public function getId(): ?int
@@ -151,6 +152,47 @@ class FailedDelivery
     public function onPrePersist(): void
     {
         $this->createdAt = new \DateTime();
+    }
+
+    /**
+     * Check if this delivery can be retried
+     */
+    public function canRetry(): bool
+    {
+        return $this->retryCount < $this->maxRetries && $this->status === 'pending';
+    }
+
+    /**
+     * Check if retry should be attempted now
+     */
+    public function shouldRetryNow(): bool
+    {
+        if (!$this->canRetry()) {
+            return false;
+        }
+
+        if ($this->nextRetryAt === null) {
+            return true;
+        }
+
+        $now = new \DateTime();
+        return $now >= $this->nextRetryAt;
+    }
+
+    /**
+     * Check if this is a final failure (retry limit exceeded)
+     */
+    public function isFinalFailure(): bool
+    {
+        return $this->status === 'failed';
+    }
+
+    /**
+     * Check if this delivery has been resolved
+     */
+    public function isResolved(): bool
+    {
+        return $this->status === 'resolved';
     }
 }
 

@@ -106,7 +106,13 @@
                             <div class="col-6">
                                 <small class="text-muted">
                                     <strong>Status CDP:</strong> 
-                                    <span class="badge bg-secondary">{{ lead.cdpDeliveryStatus }}</span>
+                                    {% if lead.cdpDeliveryStatus == 'success' %}
+                                        <span class="badge bg-success">Wysłano</span>
+                                    {% elseif lead.cdpDeliveryStatus == 'failed' %}
+                                        <span class="badge bg-danger">Błąd</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Oczekuje</span>
+                                    {% endif %}
                                 </small>
                             </div>
                             {% if lead.property.location %}

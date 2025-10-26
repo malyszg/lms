@@ -19,8 +19,34 @@ services:
     App\Leads\LeadPropertyServiceInterface: '@App\Leads\LeadPropertyService'
     App\Leads\EventServiceInterface: '@App\Leads\EventService'
     App\Leads\LeadRequestTransformerInterface: '@App\Leads\LeadRequestTransformer'
+    App\Leads\FailedDeliveryServiceInterface: '@App\Leads\FailedDeliveryService'
     App\ApiClient\CDPDeliveryServiceInterface: '@App\ApiClient\CDPDeliveryService'
+    App\ApiClient\CDPPayloadTransformerInterface: '@App\ApiClient\CDPPayloadTransformer'
+    App\Infrastructure\Config\CDPSystemConfig:
+        arguments:
+            $salesmanagoEnabled: '%env(CDP_SALESMANAGO_ENABLED)%'
+            $salesmanagoUrl: '%env(CDP_SALESMANAGO_URL)%'
+            $salesmanagoApiKey: '%env(CDP_SALESMANAGO_API_KEY)%'
+            $murapolEnabled: '%env(CDP_MURAPOL_ENABLED)%'
+            $murapolUrl: '%env(CDP_MURAPOL_URL)%'
+            $murapolApiKey: '%env(CDP_MURAPOL_API_KEY)%'
+            $domdevelopmentEnabled: '%env(CDP_DOMDEVELOPMENT_ENABLED)%'
+            $domdevelopmentUrl: '%env(CDP_DOMDEVELOPMENT_URL)%'
+            $domdevelopmentApiKey: '%env(CDP_DOMDEVELOPMENT_API_KEY)%'
+
+    App\Infrastructure\ExponentialBackoffCalculator: ~
     App\Service\LeadViewServiceInterface: '@App\Service\LeadViewService'
+
+    # HTTP Client for CDP delivery
+    cdp.http_client:
+        class: GuzzleHttp\Client
+        arguments:
+            $config: { timeout: 30, connect_timeout: 10 }
+
+    App\ApiClient\CDPDeliveryService:
+        arguments:
+            $httpClient: '@cdp.http_client'
+
     App\Service\CustomerViewServiceInterface: '@App\Service\CustomerViewService'
     App\Service\StatsServiceInterface: '@App\Service\StatsService'
     

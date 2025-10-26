@@ -14,6 +14,7 @@ use App\Model\Lead;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Unit tests for LeadService::updateLeadStatus method
@@ -38,6 +39,7 @@ class LeadServiceUpdateStatusTest extends TestCase
             $this->eventService,
             $this->createMock(\App\ApiClient\CDPDeliveryServiceInterface::class),
             $this->createMock(\App\Leads\LeadScoringServiceInterface::class),
+            $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
             $this->logger
         );
     }
@@ -66,6 +68,7 @@ class LeadServiceUpdateStatusTest extends TestCase
                 $this->eventService,
                 $this->createMock(\App\ApiClient\CDPDeliveryServiceInterface::class),
                 $this->createMock(\App\Leads\LeadScoringServiceInterface::class),
+                $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
                 $this->logger
             ])
             ->onlyMethods(['findByUuid'])
@@ -132,6 +135,7 @@ class LeadServiceUpdateStatusTest extends TestCase
                 $this->eventService,
                 $this->createMock(\App\ApiClient\CDPDeliveryServiceInterface::class),
                 $this->createMock(\App\Leads\LeadScoringServiceInterface::class),
+                $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
                 $this->logger
             ])
             ->onlyMethods(['findByUuid'])
@@ -174,6 +178,7 @@ class LeadServiceUpdateStatusTest extends TestCase
                 $this->eventService,
                 $this->createMock(\App\ApiClient\CDPDeliveryServiceInterface::class),
                 $this->createMock(\App\Leads\LeadScoringServiceInterface::class),
+                $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
                 $this->logger
             ])
             ->onlyMethods(['findByUuid'])
@@ -227,6 +232,7 @@ class LeadServiceUpdateStatusTest extends TestCase
                     $this->eventService,
                     $this->createMock(\App\ApiClient\CDPDeliveryServiceInterface::class),
                     $this->createMock(\App\Leads\LeadScoringServiceInterface::class),
+                    $this->createMock(\Symfony\Component\Messenger\MessageBusInterface::class),
                     $this->logger
                 ])
                 ->onlyMethods(['findByUuid'])

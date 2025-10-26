@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Model;
 
+use App\Model\FailedDelivery;
 use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * Lead entity
@@ -20,6 +23,7 @@ class Lead
     private DateTimeInterface $createdAt;
     private DateTimeInterface $updatedAt;
     private ?LeadProperty $property = null;
+    private Collection $failedDeliveries;
     
     // AI Scoring Cache
     private ?int $aiScore = null;
@@ -36,6 +40,7 @@ class Lead
         $this->leadUuid = $leadUuid;
         $this->customer = $customer;
         $this->applicationName = $applicationName;
+        $this->failedDeliveries = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -117,6 +122,30 @@ class Lead
     public function setProperty(?LeadProperty $property): self
     {
         $this->property = $property;
+        return $this;
+    }
+
+    /**
+     * Get failed deliveries for this lead
+     *
+     * @return Collection<int, FailedDelivery>
+     */
+    public function getFailedDeliveries(): Collection
+    {
+        return $this->failedDeliveries;
+    }
+
+    public function addFailedDelivery(FailedDelivery $failedDelivery): self
+    {
+        if (!$this->failedDeliveries->contains($failedDelivery)) {
+            $this->failedDeliveries->add($failedDelivery);
+        }
+        return $this;
+    }
+
+    public function removeFailedDelivery(FailedDelivery $failedDelivery): self
+    {
+        $this->failedDeliveries->removeElement($failedDelivery);
         return $this;
     }
 

@@ -14,6 +14,8 @@ use App\DTO\LeadItemDto;
 use App\Exception\CustomerNotFoundException;
 use App\Exception\ValidationException;
 use App\Model\Customer;
+use App\Model\Event;
+use App\Model\FailedDelivery;
 use App\Model\Lead;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
@@ -544,6 +546,9 @@ class CustomerService implements CustomerServiceInterface
                 $lead->getProperty()->getCity()
             ) : new \App\DTO\PropertyDto(null, null, null, null, null, null, null);
 
+            // Determine CDP delivery status
+            $cdpDeliveryStatus = $this->determineCdpDeliveryStatus($lead);
+            
             $leadDtos[] = new LeadItemDto(
                 $lead->getId(),
                 $lead->getLeadUuid(),
@@ -553,7 +558,7 @@ class CustomerService implements CustomerServiceInterface
                 $customerDto,
                 $lead->getApplicationName(),
                 $propertyDto,
-                'pending' // CDP delivery status - placeholder
+                $cdpDeliveryStatus
             );
 
             // Count leads by status
@@ -654,6 +659,56 @@ class CustomerService implements CustomerServiceInterface
             (int) $customersWithPreferences,
             (int) $newCustomersToday
         );
+    }
+    
+    /**
+     * Determine CDP delivery status for a lead
+     * 
+     * Status priority:
+     * 1. 'failed' - if there are any non-resolved failed deliveries
+     * 2. 'success' - if there are successful delivery events and no failures
+     * 3. 'pending' - otherwise
+     * 
+     * @param Lead $lead
+     * @return string
+     */
+    private function determineCdpDeliveryStatus(Lead $lead): string
+    {
+        // Check for failed deliveries (not resolved)
+        $qb1 = $this->entityManager->createQueryBuilder();
+        $hasFailedDelivery = $qb1
+            ->select('COUNT(fd.id)')
+            ->from(FailedDelivery::class, 'fd')
+            ->where('fd.lead = :lead')
+            ->andWhere('fd.status != :resolvedStatus')
+            ->setParameter('lead', $lead)
+            ->setParameter('resolvedStatus', 'resolved')
+            ->getQuery()
+            ->getSingleScalarResult();
+        
+        if ($hasFailedDelivery > 0) {
+            return 'failed';
+        }
+        
+        // Check for successful delivery events
+        $qb2 = $this->entityManager->createQueryBuilder();
+        $hasSuccessEvent = $qb2
+            ->select('COUNT(e.id)')
+            ->from(Event::class, 'e')
+            ->where('e.entityType = :entityType')
+            ->andWhere('e.entityId = :entityId')
+            ->andWhere('e.eventType = :eventType')
+            ->setParameter('entityType', 'lead')
+            ->setParameter('entityId', $lead->getId())
+            ->setParameter('eventType', 'cdp_delivery_success')
+            ->getQuery()
+            ->getSingleScalarResult();
+        
+        if ($hasSuccessEvent > 0) {
+            return 'success';
+        }
+        
+        return 'pending';
     }
 }
 

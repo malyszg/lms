@@ -241,6 +241,19 @@ clear_cache() {
     print_success "Cache cleared and warmed up"
 }
 
+# Start messenger worker
+start_messenger_worker() {
+    print_status "Starting Messenger worker in background..."
+    
+    # Start worker as background process in app container
+    if docker-compose -f docker/docker-compose.yml exec -d app php bin/console messenger:consume async -vv >/dev/null 2>&1; then
+        print_success "Messenger worker started successfully"
+    else
+        print_warning "Could not start worker automatically. You can start it manually with:"
+        print_warning "docker-compose -f docker/docker-compose.yml exec -d app php bin/console messenger:consume async -vv"
+    fi
+}
+
 # Show service URLs
 show_urls() {
     echo ""
@@ -250,6 +263,7 @@ show_urls() {
     echo "  🌐 Application:     http://localhost:8082"
     echo "  🗄️  phpMyAdmin:     http://localhost:8081"
     echo "  🐰 RabbitMQ Admin:  http://localhost:15672"
+    echo "  👷 Worker Logs:    docker-compose -f docker/docker-compose.yml logs -f worker"
     echo ""
     echo "Credentials:"
     echo "  MySQL:"
@@ -266,6 +280,7 @@ show_urls() {
     echo ""
     echo "Useful commands:"
     echo "  📋 View logs:       docker-compose -f docker/docker-compose.yml logs -f"
+    echo "  👷 Worker logs:     docker-compose -f docker/docker-compose.yml logs -f worker"
     echo "  🛑 Stop services:   docker-compose -f docker/docker-compose.yml down"
     echo "  🔄 Restart:         docker-compose -f docker/docker-compose.yml restart"
     echo "  🧹 Clean up:        docker-compose -f docker/docker-compose.yml down -v --remove-orphans"
@@ -287,6 +302,7 @@ main() {
     fix_permissions
     run_migrations
     clear_cache
+    start_messenger_worker
     show_urls
     
     print_success "Setup completed successfully! 🎉"

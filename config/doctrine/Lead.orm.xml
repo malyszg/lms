@@ -40,6 +40,13 @@
 
         <one-to-one field="property" target-entity="App\Model\LeadProperty" mapped-by="lead"/>
 
+        <one-to-many field="failedDeliveries" target-entity="App\Model\FailedDelivery" mapped-by="lead">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+
         <indexes>
             <index name="idx_customer_created" columns="customer_id,created_at"/>
             <index name="idx_application_created" columns="application_name,created_at"/>

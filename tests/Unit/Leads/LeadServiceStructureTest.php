@@ -13,6 +13,7 @@ use App\Leads\LeadScoringServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Unit tests for LeadService class structure and interface
@@ -26,6 +27,7 @@ class LeadServiceStructureTest extends TestCase
     private EventServiceInterface $eventService;
     private CDPDeliveryServiceInterface $cdpDeliveryService;
     private LeadScoringServiceInterface $leadScoringService;
+    private MessageBusInterface $messageBus;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -36,6 +38,7 @@ class LeadServiceStructureTest extends TestCase
         $this->eventService = $this->createMock(EventServiceInterface::class);
         $this->cdpDeliveryService = $this->createMock(CDPDeliveryServiceInterface::class);
         $this->leadScoringService = $this->createMock(LeadScoringServiceInterface::class);
+        $this->messageBus = $this->createMock(MessageBusInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         
         $this->leadService = new LeadService(
@@ -45,6 +48,7 @@ class LeadServiceStructureTest extends TestCase
             $this->eventService,
             $this->cdpDeliveryService,
             $this->leadScoringService,
+            $this->messageBus,
             $this->logger
         );
     }
@@ -122,7 +126,7 @@ class LeadServiceStructureTest extends TestCase
         // Test that it has proper constructor
         $constructor = $reflection->getConstructor();
         $this->assertNotNull($constructor);
-        $this->assertEquals(6, $constructor->getNumberOfRequiredParameters());
+        $this->assertEquals(7, $constructor->getNumberOfRequiredParameters());
         
         // Test that it's not abstract
         $this->assertFalse($reflection->isAbstract());
@@ -155,6 +159,7 @@ class LeadServiceStructureTest extends TestCase
         $this->assertInstanceOf(EventServiceInterface::class, $this->eventService);
         $this->assertInstanceOf(CDPDeliveryServiceInterface::class, $this->cdpDeliveryService);
         $this->assertInstanceOf(LeadScoringServiceInterface::class, $this->leadScoringService);
+        $this->assertInstanceOf(MessageBusInterface::class, $this->messageBus);
         $this->assertInstanceOf(LoggerInterface::class, $this->logger);
     }
 }

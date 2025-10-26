@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Leads;
 
 use App\Model\Event;
+use App\Model\FailedDelivery;
 use App\Model\Lead;
 use App\Model\Customer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -391,6 +392,87 @@ class EventService implements EventServiceInterface
         }
 
         return $changes;
+    }
+
+    /**
+     * Log CDP retry success event
+     *
+     * @param FailedDelivery $failedDelivery Failed delivery that was retried successfully
+     * @return Event
+     */
+    public function logCdpRetrySuccess(FailedDelivery $failedDelivery): Event
+    {
+        $lead = $failedDelivery->getLead();
+        
+        $event = new Event('cdp_retry_success');
+        $event->setEntityType('failed_delivery');
+        $event->setEntityId($failedDelivery->getId());
+        $event->setDetails([
+            'failed_delivery_id' => $failedDelivery->getId(),
+            'lead_id' => $lead->getId(),
+            'lead_uuid' => $lead->getLeadUuid(),
+            'cdp_system' => $failedDelivery->getCdpSystemName(),
+            'retry_count' => $failedDelivery->getRetryCount(),
+        ]);
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
+    }
+
+    /**
+     * Log CDP retry failed event
+     *
+     * @param FailedDelivery $failedDelivery Failed delivery that retry failed
+     * @param string $errorMessage Error message
+     * @return Event
+     */
+    public function logCdpRetryFailed(FailedDelivery $failedDelivery, string $errorMessage): Event
+    {
+        $lead = $failedDelivery->getLead();
+        
+        $event = new Event('cdp_retry_failed');
+        $event->setEntityType('failed_delivery');
+        $event->setEntityId($failedDelivery->getId());
+        $event->setErrorMessage($errorMessage);
+        $event->setDetails([
+            'failed_delivery_id' => $failedDelivery->getId(),
+            'lead_id' => $lead->getId(),
+            'lead_uuid' => $lead->getLeadUuid(),
+            'cdp_system' => $failedDelivery->getCdpSystemName(),
+            'retry_count' => $failedDelivery->getRetryCount(),
+        ]);
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
+    }
+
+    /**
+     * Log CDP delivery skipped event (system disabled)
+     *
+     * @param Lead $lead Lead that delivery was skipped
+     * @param string $cdpSystem CDP system name
+     * @param string $reason Reason for skipping
+     * @return Event
+     */
+    public function logCdpDeliverySkipped(Lead $lead, string $cdpSystem, string $reason): Event
+    {
+        $event = new Event('cdp_delivery_skipped');
+        $event->setEntityType('lead');
+        $event->setEntityId($lead->getId());
+        $event->setDetails([
+            'lead_uuid' => $lead->getLeadUuid(),
+            'cdp_system' => $cdpSystem,
+            'reason' => $reason,
+        ]);
+
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
+
+        return $event;
     }
 }
 

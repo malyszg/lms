@@ -24,6 +24,7 @@ use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Unit tests for LeadService
@@ -46,6 +47,7 @@ class LeadServiceTest extends TestCase
     private EventServiceInterface&MockObject $eventService;
     private CDPDeliveryServiceInterface&MockObject $cdpDeliveryService;
     private LeadScoringServiceInterface&MockObject $leadScoringService;
+    private MessageBusInterface&MockObject $messageBus;
     private LoggerInterface&MockObject $logger;
     private EntityRepository&MockObject $leadRepository;
     
@@ -60,6 +62,7 @@ class LeadServiceTest extends TestCase
         $this->eventService = $this->createMock(EventServiceInterface::class);
         $this->cdpDeliveryService = $this->createMock(CDPDeliveryServiceInterface::class);
         $this->leadScoringService = $this->createMock(LeadScoringServiceInterface::class);
+        $this->messageBus = $this->createMock(MessageBusInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->leadRepository = $this->createMock(EntityRepository::class);
 
@@ -71,6 +74,7 @@ class LeadServiceTest extends TestCase
             $this->eventService,
             $this->cdpDeliveryService,
             $this->leadScoringService,
+            $this->messageBus,
             $this->logger
         );
     }
@@ -130,11 +134,11 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP delivery (should not throw even if fails)
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP')
-            ->with($this->isInstanceOf(Lead::class));
+            ->method('dispatch')
+            ->with($this->isInstanceOf(\App\Message\CDPLeadMessage::class));
 
         // Mock AI scoring
         $scoreResult = new LeadScoreResult(
@@ -327,11 +331,10 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP delivery to throw exception
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus - should not throw
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP')
-            ->willThrowException(new \Exception('CDP API timeout'));
+            ->method('dispatch');
 
         // Mock AI scoring to return valid result
         $this->leadScoringService
@@ -386,10 +389,10 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP delivery
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP');
+            ->method('dispatch');
 
         // Mock AI scoring to throw exception
         $this->leadScoringService
@@ -454,10 +457,10 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP and AI
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus and AI
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP');
+            ->method('dispatch');
 
         $this->leadScoringService
             ->expects($this->once())
@@ -590,10 +593,10 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP and AI
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus and AI
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP');
+            ->method('dispatch');
 
         $this->leadScoringService
             ->expects($this->once())
@@ -643,10 +646,10 @@ class LeadServiceTest extends TestCase
         // Mock transaction handling with lifecycle callbacks
         $this->setupSuccessfulTransactionMocks();
 
-        // Mock CDP and AI
-        $this->cdpDeliveryService
+        // Mock CDP delivery via message bus and AI
+        $this->messageBus
             ->expects($this->once())
-            ->method('sendLeadToCDP');
+            ->method('dispatch');
 
         $this->leadScoringService
             ->expects($this->once())
