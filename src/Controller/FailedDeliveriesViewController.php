@@ -17,7 +17,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Failed Deliveries View Controller
  * Handles failed CDP deliveries view for administrators
  */
-#[IsGranted('ROLE_ADMIN')]
 class FailedDeliveriesViewController extends AbstractController
 {
     public function __construct(
@@ -25,6 +24,7 @@ class FailedDeliveriesViewController extends AbstractController
     ) {}
 
     #[Route('/failed-deliveries', name: 'failed_deliveries_index', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function index(Request $request): Response
     {
         $page = max(1, (int)($request->query->get('page', 1)));
@@ -103,6 +103,7 @@ class FailedDeliveriesViewController extends AbstractController
     }
     
     #[Route('/failed-deliveries/count', name: 'failed_deliveries_count', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function count(): Response
     {
         $repository = $this->entityManager->getRepository(FailedDelivery::class);
@@ -121,6 +122,7 @@ class FailedDeliveriesViewController extends AbstractController
     }
 
     #[Route('/failed-deliveries/details/{id}', name: 'failed_deliveries_details', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function details(int $id): Response
     {
         $failedDelivery = $this->entityManager->getRepository(FailedDelivery::class)
