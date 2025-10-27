@@ -1,0 +1,223 @@
+{# Fluent Design Slider for Failed Delivery Details #}
+<div class="fluent-slider-backdrop" id="failed-delivery-slider-backdrop" onclick="closeFailedDeliverySlider()"></div>
+
+<div class="fluent-slider" id="failed-delivery-details-slider">
+    <div class="fluent-slider-header">
+        <div>
+            <h2 style="font-size: var(--fluent-font-size-600); font-weight: var(--fluent-font-weight-semibold); margin-bottom: var(--fluent-spacing-xs);">
+                Szczegóły nieudanej dostawy
+            </h2>
+            <div style="display: flex; align-items: center; gap: var(--fluent-spacing-m);">
+                <code style="color: var(--fluent-neutral-foreground-3); font-size: var(--fluent-font-size-200);">#{{ failedDelivery.id }}</code>
+                {% if failedDelivery.status == 'pending' %}
+                    <span class="badge bg-warning">Oczekuje</span>
+                {% elseif failedDelivery.status == 'retrying' %}
+                    <span class="badge bg-info">Ponawianie</span>
+                {% elseif failedDelivery.status == 'failed' %}
+                    <span class="badge bg-danger">Niepowodzenie</span>
+                {% elseif failedDelivery.status == 'resolved' %}
+                    <span class="badge bg-success">Rozwiązane</span>
+                {% endif %}
+            </div>
+        </div>
+        <fluent-button appearance="subtle" id="close-failed-delivery-slider-btn" onclick="closeFailedDeliverySlider()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 6.586L5.707 4.293 4.293 5.707 6.586 8l-2.293 2.293 1.414 1.414L8 9.414l2.293 2.293 1.414-1.414L9.414 8l2.293-2.293-1.414-1.414L8 6.586z"/>
+            </svg>
+        </fluent-button>
+    </div>
+    
+    <div class="fluent-slider-body">
+        {# Lead Information #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle;">
+                    <path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"/>
+                </svg>
+                Informacje o leadzie
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                <div>
+                    <label class="fluent-slider-label">Lead UUID</label>
+                    <div class="fluent-slider-value">
+                        <code>{{ failedDelivery.lead.leadUuid }}</code>
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Aplikacja źródłowa</label>
+                    <div class="fluent-slider-value">{{ failedDelivery.lead.applicationName }}</div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Status leada</label>
+                    <div class="fluent-slider-value">
+                        {% if failedDelivery.lead.status == 'new' %}
+                            <span class="badge bg-info">Nowy</span>
+                        {% elseif failedDelivery.lead.status == 'contacted' %}
+                            <span class="badge bg-primary">Skontaktowano</span>
+                        {% elseif failedDelivery.lead.status == 'qualified' %}
+                            <span class="badge bg-success">Zakwalifikowano</span>
+                        {% elseif failedDelivery.lead.status == 'converted' %}
+                            <span class="badge bg-success">Przekonwertowano</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Odrzucono</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Data utworzenia</label>
+                    <div class="fluent-slider-value">{{ failedDelivery.lead.createdAt|date('d.m.Y H:i') }}</div>
+                </div>
+            </div>
+        </div>
+
+        {# Customer Information #}
+        {% set customer = failedDelivery.lead.customer %}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle;">
+                    <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                Informacje o kliencie
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                <div>
+                    <label class="fluent-slider-label">Imię i nazwisko</label>
+                    <div class="fluent-slider-value">
+                        {{ customer.firstName }} {{ customer.lastName }}
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Email</label>
+                    <div class="fluent-slider-value">
+                        <a href="mailto:{{ customer.email }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                            {{ customer.email }}
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Telefon</label>
+                    <div class="fluent-slider-value">
+                        <a href="tel:{{ customer.phone }}" style="color: var(--fluent-accent-primary); text-decoration: none;">
+                            {{ customer.phone }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Delivery Information #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle;">
+                    <path d="M14 4H2c-.55 0-1 .45-1 1s.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1zm0 3H2c-.55 0-1 .45-1 1s.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1zm0 3H2c-.55 0-1 .45-1 1s.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1z"/>
+                </svg>
+                Informacje o dostawie
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--fluent-spacing-l);">
+                <div>
+                    <label class="fluent-slider-label">System CDP</label>
+                    <div class="fluent-slider-value">
+                        <span class="badge bg-secondary">{{ failedDelivery.cdpSystemName }}</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="fluent-slider-label">Status</label>
+                    <div class="fluent-slider-value">
+                        {% if failedDelivery.status == 'pending' %}
+                            <span class="badge bg-warning">Oczekuje</span>
+                        {% elseif failedDelivery.status == 'retrying' %}
+                            <span class="badge bg-info">Ponawianie</span>
+                        {% elseif failedDelivery.status == 'failed' %}
+                            <span class="badge bg-danger">Niepowodzenie</span>
+                        {% elseif failedDelivery.status == 'resolved' %}
+                            <span class="badge bg-success">Rozwiązane</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if failedDelivery.errorCode %}
+                    <div>
+                        <label class="fluent-slider-label">Kod błędu</label>
+                        <div class="fluent-slider-value">
+                            <code>{{ failedDelivery.errorCode }}</code>
+                        </div>
+                    </div>
+                {% endif %}
+                <div>
+                    <label class="fluent-slider-label">Data utworzenia</label>
+                    <div class="fluent-slider-value">{{ failedDelivery.createdAt|date('d.m.Y H:i:s') }}</div>
+                </div>
+                {% if failedDelivery.resolvedAt %}
+                    <div>
+                        <label class="fluent-slider-label">Data rozwiązania</label>
+                        <div class="fluent-slider-value">{{ failedDelivery.resolvedAt|date('d.m.Y H:i:s') }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Error Details #}
+        {% if failedDelivery.errorMessage %}
+            <div class="fluent-slider-section">
+                <h3 class="fluent-slider-section-title">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-danger)" style="vertical-align: middle;">
+                        <path d="M8 1c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7zm1 10H7v2h2v-2zm0-8H7v6h2V3z"/>
+                    </svg>
+                    Szczegóły błędu
+                </h3>
+                <div style="background-color: var(--fluent-danger-bg); border-left: 4px solid var(--fluent-danger); padding: var(--fluent-spacing-l); border-radius: var(--fluent-border-radius-medium);">
+                    <p style="margin: 0; color: var(--fluent-danger-foreground);">
+                        {{ failedDelivery.errorMessage }}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Retry Information #}
+        <div class="fluent-slider-section">
+            <h3 class="fluent-slider-section-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fluent-accent-primary)" style="vertical-align: middle;">
+                    <path d="M11.5 4c-.28 0-.5.22-.5.5V6H5.79l3.71-3.71c.19-.19.29-.45.29-.71 0-.55-.45-1-1-1-.27 0-.52.11-.71.29L2.29 5.5C2.11 5.68 2 5.93 2 6.21c0 .28.11.52.29.71l5.01 5.01c.18.18.43.29.71.29.55 0 1-.45 1-1 0-.27-.11-.52-.29-.71L5.79 8H11v1.5c0 .28.22.5.5.5s.5-.22.5-.5v-5c0-.28-.22-.5-.5-.5z"/>
+                </svg>
+                Historia prób
+            </h3>
+            <div style="display: grid; gap: var(--fluent-spacing-m);">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--fluent-spacing-m); padding: var(--fluent-spacing-l); background-color: var(--fluent-neutral-background-2); border-radius: var(--fluent-border-radius-medium);">
+                    <div>
+                        <label class="fluent-slider-label">Liczba prób</label>
+                        <div class="fluent-slider-value" style="font-size: var(--fluent-font-size-500); font-weight: var(--fluent-font-weight-semibold);">
+                            {{ failedDelivery.retryCount }} / {{ failedDelivery.maxRetries }}
+                        </div>
+                    </div>
+                    {% if failedDelivery.nextRetryAt %}
+                        <div>
+                            <label class="fluent-slider-label">Następna próba</label>
+                            <div class="fluent-slider-value">
+                                {{ failedDelivery.nextRetryAt|date('d.m.Y H:i:s') }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fluent-slider-footer">
+        {% if failedDelivery.canRetry and is_granted('ROLE_ADMIN') %}
+            <fluent-button appearance="accent" onclick="retryDeliveryFromSlider({{ failedDelivery.id }})">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M11.5 4c-.28 0-.5.22-.5.5V6H5.79l3.71-3.71c.19-.19.29-.45.29-.71 0-.55-.45-1-1-1-.27 0-.52.11-.71.29L2.29 5.5C2.11 5.68 2 5.93 2 6.21c0 .28.11.52.29.71l5.01 5.01c.18.18.43.29.71.29.55 0 1-.45 1-1 0-.27-.11-.52-.29-.71L5.79 8H11v1.5c0 .28.22.5.5.5s.5-.22.5-.5v-5c0-.28-.22-.5-.5-.5z"/>
+                </svg>
+                Ponów wysłanie teraz
+            </fluent-button>
+        {% endif %}
+        <fluent-button appearance="neutral" onclick="closeFailedDeliverySlider()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 6.586L5.707 4.293 4.293 5.707 6.586 8l-2.293 2.293 1.414 1.414L8 9.414l2.293 2.293 1.414-1.414L9.414 8l2.293-2.293-1.414-1.414L8 6.586z"/>
+            </svg>
+            Zamknij
+        </fluent-button>
+    </div>
+</div>
+
+<!-- JavaScript functions and CSS animations are now defined globally in index.html.twig and app.css -->
+

@@ -1,0 +1,223 @@
+{% if failedDeliveries is empty %}
+    <div style="padding: 2rem; text-align: center;">
+        <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+        <p class="mt-3">Nie znaleziono nieudanych dostaw</p>
+    </div>
+{% else %}
+    <div style="overflow-x: auto;">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 200px;">Lead UUID</th>
+                    <th>Klient</th>
+                    <th style="width: 120px;">System CDP</th>
+                    <th style="width: 100px;">Kod błędu</th>
+                    <th style="width: 120px;">Próby</th>
+                    <th style="width: 150px;">Następna próba</th>
+                    <th style="width: 100px;">Status</th>
+                    <th style="width: 100px;">Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for failedDelivery in failedDeliveries %}
+                    <tr id="delivery-{{ failedDelivery.id }}" 
+                        style="cursor: pointer;"
+                        onclick="viewFailedDeliveryDetails({{ failedDelivery.id }})">
+                        <td>
+                            <code style="font-size: 0.85rem;">
+                                {{ failedDelivery.lead.leadUuid[:8] }}...
+                            </code>
+                        </td>
+                        <td>
+                            {% set customer = failedDelivery.lead.customer %}
+                            <div>
+                                <strong>{{ customer.firstName ?? '' }} {{ customer.lastName ?? '' }}</strong><br>
+                                <small class="text-muted">
+                                    <i class="bi bi-envelope"></i> {{ customer.email }}
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="bi bi-telephone"></i> {{ customer.phone }}
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ failedDelivery.cdpSystemName }}</span>
+                        </td>
+                        <td>
+                            {% if failedDelivery.errorCode %}
+                                <code>{{ failedDelivery.errorCode }}</code>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {{ failedDelivery.retryCount }} / {{ failedDelivery.maxRetries }}
+                            </small>
+                        </td>
+                        <td>
+                            {% if failedDelivery.nextRetryAt %}
+                                <small>{{ failedDelivery.nextRetryAt|date('d.m.Y H:i') }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if failedDelivery.status == 'pending' %}
+                                <span class="badge bg-warning">Oczekuje</span>
+                            {% elseif failedDelivery.status == 'retrying' %}
+                                <span class="badge bg-info">Ponawianie</span>
+                            {% elseif failedDelivery.status == 'failed' %}
+                                <span class="badge bg-danger">Niepowodzenie</span>
+                            {% elseif failedDelivery.status == 'resolved' %}
+                                <span class="badge bg-success">Rozwiązane</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if failedDelivery.canRetry and is_granted('ROLE_ADMIN') %}
+                                <button class="btn btn-warning btn-sm" 
+                                        onclick="event.stopPropagation(); retryDelivery({{ failedDelivery.id }})"
+                                        title="Ponów wysłanie">
+                                    <i class="bi bi-arrow-repeat"></i> Retry
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Paginacja" class="p-3">
+        <ul class="pagination justify-content-center mb-0">
+            {% if pagination.hasPrevious %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path('failed_deliveries_index', {page: pagination.currentPage - 1, limit: pagination.perPage, status: filters.status, cdp_system_name: filters.cdp_system_name, created_from: filters.created_from, created_to: filters.created_to}) }}">Poprzednia</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Poprzednia</span>
+                </li>
+            {% endif %}
+
+            {% for i in range(max(1, pagination.currentPage - 2), min(pagination.lastPage, pagination.currentPage + 2)) %}
+                <li class="page-item {% if i == pagination.currentPage %}active{% endif %}">
+                    <a class="page-link" href="{{ path('failed_deliveries_index', {page: i, limit: pagination.perPage, status: filters.status, cdp_system_name: filters.cdp_system_name, created_from: filters.created_from, created_to: filters.created_to}) }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+
+            {% if pagination.hasNext %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path('failed_deliveries_index', {page: pagination.currentPage + 1, limit: pagination.perPage, status: filters.status, cdp_system_name: filters.cdp_system_name, created_from: filters.created_from, created_to: filters.created_to}) }}">Następna</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Następna</span>
+                </li>
+            {% endif %}
+        </ul>
+        
+        <div class="text-center mt-2">
+            <small class="text-muted">
+                Wyświetlanie {{ pagination.from }} - {{ pagination.to }} z {{ pagination.total }} nieudanych dostaw
+            </small>
+        </div>
+    </nav>
+{% endif %}
+
+<script>
+function viewFailedDeliveryDetails(id) {
+    // Load slider content
+    fetch(`/failed-deliveries/details/${id}`)
+        .then(response => response.text())
+        .then(html => {
+            // Create slider container if it doesn't exist
+            let sliderContainer = document.getElementById('slider-container');
+            if (!sliderContainer) {
+                sliderContainer = document.createElement('div');
+                sliderContainer.id = 'slider-container';
+                sliderContainer.style.position = 'fixed';
+                sliderContainer.style.top = '0';
+                sliderContainer.style.left = '0';
+                sliderContainer.style.width = '100%';
+                sliderContainer.style.height = '100%';
+                sliderContainer.style.zIndex = '9999';
+                document.body.appendChild(sliderContainer);
+            } else {
+                sliderContainer.innerHTML = '';
+            }
+            
+            // Insert HTML
+            sliderContainer.innerHTML = html;
+            
+            // Show the slider
+            const slider = sliderContainer.querySelector('#failed-delivery-details-slider');
+            const backdrop = sliderContainer.querySelector('#failed-delivery-slider-backdrop');
+            
+            if (slider && backdrop) {
+                slider.style.display = 'block';
+                backdrop.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading failed delivery details:', error);
+            showToast('Błąd podczas ładowania szczegółów nieudanej dostawy', 'error');
+        });
+}
+
+function retryDelivery(id) {
+    if (!confirm('Czy na pewno chcesz ponowić wysłanie tego leada?')) {
+        return;
+    }
+
+    fetch('/api/failed-deliveries/' + id + '/retry', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showToast('Retry zainicjowany pomyślnie', 'success');
+            location.reload();
+        } else if (data.error) {
+            showToast('Błąd: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Wystąpił błąd podczas retry', 'error');
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    const toastId = 'toast-' + Date.now();
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'} text-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} me-2"></i>
+                <strong class="me-auto">${type === 'error' ? 'Błąd' : type === 'success' ? 'Sukces' : 'Info'}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+</script>
+

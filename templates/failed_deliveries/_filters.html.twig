@@ -1,0 +1,63 @@
+<form method="GET" action="{{ path('failed_deliveries_index') }}" class="row g-3">
+    <div class="col-md-3">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status">
+            <option value="">Wszystkie</option>
+            <option value="pending" {{ filters.status == 'pending' ? 'selected' : '' }}>Oczekuje</option>
+            <option value="retrying" {{ filters.status == 'retrying' ? 'selected' : '' }}>Ponawianie</option>
+            <option value="failed" {{ filters.status == 'failed' ? 'selected' : '' }}>Niepowodzenie</option>
+            <option value="resolved" {{ filters.status == 'resolved' ? 'selected' : '' }}>Rozwiązane</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="cdp_system_name" class="form-label">System CDP</label>
+        <select class="form-select" id="cdp_system_name" name="cdp_system_name">
+            <option value="">Wszystkie</option>
+            <option value="SalesManago" {{ filters.cdp_system_name == 'SalesManago' ? 'selected' : '' }}>SalesManago</option>
+            <option value="Murapol" {{ filters.cdp_system_name == 'Murapol' ? 'selected' : '' }}>Murapol</option>
+            <option value="DomDevelopment" {{ filters.cdp_system_name == 'DomDevelopment' ? 'selected' : '' }}>DomDevelopment</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="created_from" class="form-label">Data od</label>
+        <input type="date" class="form-control" id="created_from" name="created_from" value="{{ filters.created_from }}">
+    </div>
+
+    <div class="col-md-3">
+        <label for="created_to" class="form-label">Data do</label>
+        <input type="date" class="form-control" id="created_to" name="created_to" value="{{ filters.created_to }}">
+    </div>
+
+    <div class="col-12">
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i>Zastosuj filtry
+            </button>
+            <a href="{{ path('failed_deliveries_index') }}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Wyczyść filtry
+            </a>
+        </div>
+    </div>
+</form>
+
+<script>
+// Ensure "to" date is after "from" date
+const fromDate = document.getElementById('created_from');
+const toDate = document.getElementById('created_to');
+
+if (fromDate && toDate) {
+    fromDate.addEventListener('change', function() {
+        toDate.min = fromDate.value;
+    });
+
+    toDate.addEventListener('change', function() {
+        if (toDate.value < fromDate.value) {
+            alert('Data "do" musi być późniejsza niż data "od"');
+            toDate.value = '';
+        }
+    });
+}
+</script>
+
