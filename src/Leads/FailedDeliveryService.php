@@ -109,7 +109,17 @@ class FailedDeliveryService implements FailedDeliveryServiceInterface
     public function findById(int $id): ?FailedDelivery
     {
         $repository = $this->entityManager->getRepository(FailedDelivery::class);
-        return $repository->find($id);
+        $qb = $repository->createQueryBuilder('fd')
+            ->leftJoin('fd.lead', 'l')
+            ->leftJoin('l.customer', 'c')
+            ->leftJoin('l.property', 'p')
+            ->addSelect('l')
+            ->addSelect('c')
+            ->addSelect('p')
+            ->where('fd.id = :id')
+            ->setParameter('id', $id);
+        
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     /**

@@ -1134,6 +1134,14 @@ fluent-divider {
   font-weight: var(--fluent-font-weight-semibold);
 }
 
+.fluent-slider-footer {
+  padding: var(--fluent-spacing-l);
+  border-top: 1px solid var(--fluent-neutral-stroke-1);
+  display: flex;
+  gap: var(--fluent-spacing-m);
+  justify-content: flex-end;
+}
+
 /* ========================================
    Utility Classes
    ======================================== */

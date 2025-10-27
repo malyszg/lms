@@ -39,7 +39,7 @@
             Nieudane dostawy
             <span id="failed-deliveries-badge"
                   hx-get="{{ path('failed_deliveries_count') }}"
-                  hx-trigger="none"
+                  hx-trigger="load, every 60s"
                   hx-swap="innerHTML">
                 {# Badge dynamically updated #}
             </span>

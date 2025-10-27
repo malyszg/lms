@@ -10,6 +10,7 @@ use App\Leads\EventServiceInterface;
 use App\Leads\FailedDeliveryServiceInterface;
 use App\Model\FailedDelivery;
 use App\Model\Lead;
+use Doctrine\ORM\EntityManagerInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
@@ -27,6 +28,7 @@ class CDPDeliveryService implements CDPDeliveryServiceInterface
         private readonly CDPSystemConfig $systemConfig,
         private readonly ExponentialBackoffCalculator $backoffCalculator,
         private readonly Client $httpClient,
+        private readonly EntityManagerInterface $entityManager,
         private readonly ?LoggerInterface $logger = null
     ) {}
 
@@ -136,7 +138,7 @@ class CDPDeliveryService implements CDPDeliveryServiceInterface
         try {
             // Mark as retrying
             $failedDelivery->setStatus('retrying');
-            $this->failedDeliveryService->markAsResolved($failedDelivery); // Just flush status change
+            $this->entityManager->flush(); // Flush status change
 
             // Try to send
             $this->sendToSingleCDP($lead, $cdpSystem);
