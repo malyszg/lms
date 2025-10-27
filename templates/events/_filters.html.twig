@@ -1,0 +1,87 @@
+<form method="GET" action="{{ path('events_index') }}" class="row g-3" id="events-filters-form">
+    <div class="col-md-3">
+        <label for="event_type" class="form-label">Typ eventu</label>
+        <select class="form-select" id="event_type" name="event_type">
+            <option value="">Wszystkie</option>
+            <option value="lead_created" {{ filters.event_type == 'lead_created' ? 'selected' : '' }}>Utworzenie leada</option>
+            <option value="lead_updated" {{ filters.event_type == 'lead_updated' ? 'selected' : '' }}>Aktualizacja leada</option>
+            <option value="lead_deleted" {{ filters.event_type == 'lead_deleted' ? 'selected' : '' }}>Usunięcie leada</option>
+            <option value="cdp_delivery_success" {{ filters.event_type == 'cdp_delivery_success' ? 'selected' : '' }}>Sukces dostawy CDP</option>
+            <option value="cdp_delivery_failed" {{ filters.event_type == 'cdp_delivery_failed' ? 'selected' : '' }}>Nieudana dostawa CDP</option>
+            <option value="customer_preferences_changed" {{ filters.event_type == 'customer_preferences_changed' ? 'selected' : '' }}>Zmiana preferencji klienta</option>
+            <option value="login_attempt" {{ filters.event_type == 'login_attempt' ? 'selected' : '' }}>Próba logowania</option>
+            <option value="logout" {{ filters.event_type == 'logout' ? 'selected' : '' }}>Wylogowanie</option>
+            <option value="password_change" {{ filters.event_type == 'password_change' ? 'selected' : '' }}>Zmiana hasła</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="entity_type" class="form-label">Typ encji</label>
+        <select class="form-select" id="entity_type" name="entity_type">
+            <option value="">Wszystkie</option>
+            <option value="lead" {{ filters.entity_type == 'lead' ? 'selected' : '' }}>Lead</option>
+            <option value="customer" {{ filters.entity_type == 'customer' ? 'selected' : '' }}>Klient</option>
+            <option value="failed_delivery" {{ filters.entity_type == 'failed_delivery' ? 'selected' : '' }}>Nieudana dostawa</option>
+            <option value="user" {{ filters.entity_type == 'user' ? 'selected' : '' }}>Użytkownik</option>
+            <option value="api" {{ filters.entity_type == 'api' ? 'selected' : '' }}>API</option>
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label for="entity_id" class="form-label">ID encji</label>
+        <input type="number" class="form-control" id="entity_id" name="entity_id" value="{{ filters.entity_id }}" min="1">
+    </div>
+
+    <div class="col-md-2">
+        <label for="user_id" class="form-label">ID użytkownika</label>
+        <input type="number" class="form-control" id="user_id" name="user_id" value="{{ filters.user_id }}" min="1">
+    </div>
+
+    <div class="col-md-5">
+        <label for="lead_uuid" class="form-label">Lead UUID</label>
+        <input type="text" class="form-control" id="lead_uuid" name="lead_uuid" value="{{ filters.lead_uuid }}" 
+               pattern="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+               placeholder="123e4567-e89b-12d3-a456-426614174000">
+    </div>
+
+    <div class="col-md-3">
+        <label for="created_from" class="form-label">Data od</label>
+        <input type="date" class="form-control" id="created_from" name="created_from" value="{{ filters.created_from }}">
+    </div>
+
+    <div class="col-md-3">
+        <label for="created_to" class="form-label">Data do</label>
+        <input type="date" class="form-control" id="created_to" name="created_to" value="{{ filters.created_to }}">
+    </div>
+
+    <div class="col-12">
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i>Zastosuj filtry
+            </button>
+            <a href="{{ path('events_index') }}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Wyczyść filtry
+            </a>
+        </div>
+    </div>
+</form>
+
+<script>
+// Ensure "to" date is after "from" date
+const fromDate = document.getElementById('created_from');
+const toDate = document.getElementById('created_to');
+
+if (fromDate && toDate) {
+    fromDate.addEventListener('change', function() {
+        toDate.min = fromDate.value;
+    });
+
+    toDate.addEventListener('change', function() {
+        if (toDate.value && fromDate.value && toDate.value < fromDate.value) {
+            alert('Data "do" musi być późniejsza niż data "od"');
+            toDate.value = '';
+        }
+    });
+}
+</script>
+
