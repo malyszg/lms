@@ -33,6 +33,11 @@
                 </tbody>
             </table>
         </div>
+        
+        {# Pagination #}
+        {% if pagination is defined %}
+            {% include 'components/pagination.html.twig' with {'pagination': pagination} %}
+        {% endif %}
     {% endif %}
 </div>
 

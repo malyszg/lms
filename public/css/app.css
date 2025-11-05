@@ -764,6 +764,87 @@ fluent-button {
   cursor: not-allowed;
 }
 
+/* Pagination Per Page Dropdown */
+.pagination-per-page-wrapper {
+  position: relative;
+}
+
+.pagination-per-page-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--fluent-spacing-s) var(--fluent-spacing-l);
+  background-color: var(--fluent-neutral-bg-canvas);
+  border: 1px solid var(--fluent-neutral-stroke-2);
+  border-radius: var(--fluent-border-radius-medium);
+  color: var(--fluent-neutral-foreground-1);
+  cursor: pointer;
+  font-size: var(--fluent-font-size-300);
+  font-weight: var(--fluent-font-weight-medium);
+  transition: all var(--fluent-duration-faster) var(--fluent-curve-easy-ease);
+}
+
+.pagination-per-page-trigger:hover {
+  background-color: var(--fluent-neutral-bg-layer-hover);
+  border-color: var(--fluent-neutral-foreground-3);
+}
+
+.pagination-per-page-trigger.active .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.pagination-per-page-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 150px;
+  background-color: var(--fluent-neutral-bg-canvas);
+  border: 1px solid var(--fluent-neutral-stroke-1);
+  border-radius: var(--fluent-border-radius-large);
+  box-shadow: var(--fluent-shadow-16);
+  padding: 8px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all var(--fluent-duration-fast) var(--fluent-curve-easy-ease);
+}
+
+.pagination-per-page-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.pagination-per-page-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: var(--fluent-neutral-foreground-1);
+  text-decoration: none;
+  border-radius: var(--fluent-border-radius-medium);
+  font-size: var(--fluent-font-size-300);
+  transition: background-color var(--fluent-duration-faster) var(--fluent-curve-easy-ease);
+  cursor: pointer;
+}
+
+.pagination-per-page-item:hover {
+  background-color: var(--fluent-neutral-bg-layer-hover);
+}
+
+.pagination-per-page-item.active {
+  font-weight: var(--fluent-font-weight-semibold);
+  color: var(--fluent-accent-primary);
+}
+
+.pagination-per-page-item svg {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex-shrink: 0;
+}
+
 /* ========================================
    HTMX Loading Indicators
    ======================================== */
@@ -972,6 +1053,39 @@ fluent-divider {
   
   .user-menu-divider {
     background-color: #424242;
+  }
+  
+  /* Pagination Per Page Dropdown Dark Mode */
+  .pagination-per-page-trigger {
+    background-color: #2b2b2b;
+    border-color: #424242;
+    color: #ffffff;
+  }
+  
+  .pagination-per-page-trigger:hover {
+    background-color: #323232;
+    border-color: #525252;
+  }
+  
+  .pagination-per-page-dropdown {
+    background-color: #2b2b2b;
+    border-color: #424242;
+  }
+  
+  .pagination-per-page-item {
+    color: #ffffff;
+  }
+  
+  .pagination-per-page-item:hover {
+    background-color: #323232;
+  }
+  
+  .pagination-per-page-item.active {
+    color: #4cc2ff;
+  }
+  
+  .pagination-per-page-item svg {
+    color: #e1e1e1;
   }
 
   /* Legacy Fluent Menu components */

@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize User Menu Dropdown
     initializeUserMenu();
 
+    // Initialize Pagination Per Page Dropdowns
+    initializePaginationPerPageDropdowns();
+
     // Style Fluent Menu components (legacy, for any remaining fluent-menu elements)
     // initializeFluentMenu(); // Disabled - causes HTMX conflicts
 });
@@ -79,6 +82,98 @@ function closeUserMenu() {
     if (menuTrigger && menuDropdown) {
         menuTrigger.classList.remove('active');
         menuDropdown.classList.remove('show');
+    }
+}
+
+// Initialize Pagination Per Page Dropdowns
+function initializePaginationPerPageDropdowns() {
+    const triggers = document.querySelectorAll('.pagination-per-page-trigger');
+    
+    triggers.forEach(trigger => {
+        // Skip if already initialized
+        if (trigger.dataset.initialized === 'true') return;
+        
+        // Get the corresponding dropdown ID from trigger ID
+        const triggerId = trigger.id;
+        const dropdownId = triggerId.replace('Trigger', 'Dropdown');
+        const dropdown = document.getElementById(dropdownId);
+        
+        if (!dropdown) return;
+        
+        // Mark as initialized
+        trigger.dataset.initialized = 'true';
+        
+        // Add click listener to trigger
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.pagination-per-page-dropdown.show').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('show');
+                    const t = document.getElementById(d.id.replace('Dropdown', 'Trigger'));
+                    if (t) {
+                        t.classList.remove('active');
+                        t.dataset.initialized = 'false'; // Allow re-initialization after HTMX swap
+                    }
+                }
+            });
+            
+            if (isOpen) {
+                closePaginationPerPageDropdown(trigger, dropdown);
+            } else {
+                openPaginationPerPageDropdown(trigger, dropdown);
+            }
+        });
+    });
+    
+    // Close dropdowns when clicking outside (only one listener needed)
+    if (!window.paginationClickOutsideHandler) {
+        window.paginationClickOutsideHandler = function(event) {
+            const allDropdowns = document.querySelectorAll('.pagination-per-page-dropdown.show');
+            allDropdowns.forEach(dropdown => {
+                const triggerId = dropdown.id.replace('Dropdown', 'Trigger');
+                const trigger = document.getElementById(triggerId);
+                
+                if (trigger && !trigger.contains(event.target) && !dropdown.contains(event.target)) {
+                    closePaginationPerPageDropdown(trigger, dropdown);
+                    trigger.dataset.initialized = 'false'; // Allow re-initialization after HTMX swap
+                }
+            });
+        };
+        document.addEventListener('click', window.paginationClickOutsideHandler);
+    }
+    
+    // Close dropdowns on escape key (only one listener needed)
+    if (!window.paginationEscapeHandler) {
+        window.paginationEscapeHandler = function(event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.pagination-per-page-dropdown.show').forEach(dropdown => {
+                    const triggerId = dropdown.id.replace('Dropdown', 'Trigger');
+                    const trigger = document.getElementById(triggerId);
+                    if (trigger) {
+                        closePaginationPerPageDropdown(trigger, dropdown);
+                        trigger.dataset.initialized = 'false'; // Allow re-initialization after HTMX swap
+                    }
+                });
+            }
+        };
+        document.addEventListener('keydown', window.paginationEscapeHandler);
+    }
+}
+
+function openPaginationPerPageDropdown(trigger, dropdown) {
+    if (trigger && dropdown) {
+        trigger.classList.add('active');
+        dropdown.classList.add('show');
+    }
+}
+
+function closePaginationPerPageDropdown(trigger, dropdown) {
+    if (trigger && dropdown) {
+        trigger.classList.remove('active');
+        dropdown.classList.remove('show');
     }
 }
 
@@ -235,6 +330,8 @@ document.addEventListener('htmx:timeout', function(event) {
 
 // After successful HTMX swap
 document.addEventListener('htmx:afterSwap', function(event) {
+    // Re-initialize pagination dropdowns after HTMX swap
+    initializePaginationPerPageDropdowns();
     // Any post-swap initialization can be done here
     console.log('Content swapped successfully');
 });

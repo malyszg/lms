@@ -57,9 +57,10 @@ class LeadsViewController extends AbstractController
             
             // Check if this is HTMX request (partial update)
             if ($request->headers->get('HX-Request')) {
-                // Return only the table partial
+                // Return only the table partial with pagination
                 return $this->render('leads/_table.html.twig', [
                     'leads' => $response->data,
+                    'pagination' => $response->pagination,
                 ]);
             }
             

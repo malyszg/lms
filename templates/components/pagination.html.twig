@@ -75,27 +75,31 @@
     </nav>
     
     {# Items per page selector #}
-    <fluent-menu>
-        <fluent-button slot="trigger" appearance="subtle">
+    <div class="pagination-per-page-wrapper">
+        <button class="pagination-per-page-trigger" id="perPageTrigger-{{ pagination.currentPage }}">
             {{ pagination.perPage }} na stronę
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="margin-left: 4px;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" class="chevron-icon" style="margin-left: 4px;">
                 <path d="M2 4l4 4 4-4H2z"/>
             </svg>
-        </fluent-button>
-        {% for limit in [20, 50, 100] %}
-            <fluent-menu-item 
-                hx-get="{{ path('leads_list', app.request.query.all|merge({limit: limit, page: 1})) }}"
-                hx-target="#leads-table-container"
-                hx-push-url="true">
-                {{ limit }}
-                {% if limit == pagination.perPage %}
-                    <svg slot="end" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M6.5 12L2 7.5 3.5 6l3 3L13 3.5 14.5 5 6.5 12z"/>
-                    </svg>
-                {% endif %}
-            </fluent-menu-item>
-        {% endfor %}
-    </fluent-menu>
+        </button>
+        
+        <div class="pagination-per-page-dropdown" id="perPageDropdown-{{ pagination.currentPage }}">
+            {% for limit in [20, 50, 100] %}
+                <a href="#" 
+                   class="pagination-per-page-item {{ limit == pagination.perPage ? 'active' : '' }}"
+                   hx-get="{{ path('leads_list', app.request.query.all|merge({limit: limit, page: 1})) }}"
+                   hx-target="#leads-table-container"
+                   hx-push-url="true">
+                    {{ limit }}
+                    {% if limit == pagination.perPage %}
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-left: auto;">
+                            <path d="M6.5 12L2 7.5 3.5 6l3 3L13 3.5 14.5 5 6.5 12z"/>
+                        </svg>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 
 

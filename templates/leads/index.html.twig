@@ -20,11 +20,8 @@
     
     {# Leads table #}
     <div class="fluent-card" style="margin-bottom: var(--fluent-spacing-xxl);">
-        {% include 'leads/_table.html.twig' with {'leads': leads} %}
+        {% include 'leads/_table.html.twig' with {'leads': leads, 'pagination': pagination} %}
     </div>
-    
-    {# Pagination #}
-    {% include 'components/pagination.html.twig' with {'pagination': pagination} %}
 </div>
 {% endblock %}
 
