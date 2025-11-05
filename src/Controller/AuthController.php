@@ -24,15 +24,31 @@ class AuthController extends AbstractController
     }
 
     /**
+     * Root path - redirect based on authentication status
+     * Priority 10 to ensure it's matched before other routes
+     */
+    #[Route('/', name: 'root', methods: ['GET'], priority: 10)]
+    public function root(): Response
+    {
+        // If logged in, go to dashboard
+        if ($this->getUser()) {
+            return $this->redirectToRoute('leads_list');
+        }
+        
+        // Otherwise, go to login
+        return $this->redirectToRoute('auth_login');
+    }
+    
+    /**
      * Display login form and handle authentication
      * Security component intercepts POST requests
      */
-    #[Route('/login', name: 'auth_login', methods: ['GET', 'POST'])]
+    #[Route('/login', name: 'auth_login', methods: ['GET'])]
     public function login(Request $request): Response
     {
         // If already logged in, redirect to dashboard
         if ($this->getUser()) {
-            return $this->redirectToRoute('leads_index');
+            return $this->redirectToRoute('leads_list');
         }
 
         // Get authentication error (if any)
@@ -41,21 +57,21 @@ class AuthController extends AbstractController
         // Get last username entered
         $lastUsername = $this->authenticationUtils->getLastUsername();
 
-        // Log failed login attempt
-        if ($error && $request->isMethod('POST')) {
-            $this->eventService->logLoginAttempt(
-                username: $lastUsername,
-                success: false,
-                ipAddress: $request->getClientIp(),
-                userAgent: $request->headers->get('User-Agent'),
-                failureReason: $error->getMessageKey()
-            );
-        }
-
         return $this->render('auth/login.html.twig', [
             'last_username' => $lastUsername,
             'error' => $error,
         ]);
+    }
+    
+    /**
+     * POST handler for login - Security will intercept this
+     * This method should never be called if Security is working correctly
+     */
+    #[Route('/login', name: 'auth_login_check', methods: ['POST'])]
+    public function loginCheck(): never
+    {
+        // This should never be called - Security should intercept POST requests
+        throw new \LogicException('Security should intercept POST requests to /login before this method is called.');
     }
     
     /**

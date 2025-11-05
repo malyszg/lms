@@ -31,7 +31,7 @@
             </div>
         {% endfor %}
         
-        <form method="post">
+        <form method="post" action="{{ path('auth_login') }}">
             <div class="fluent-form-group">
                 <label for="email" class="fluent-label">Email</label>
                 <input type="email" 
@@ -62,16 +62,15 @@
                 <label for="remember_me" style="margin-left: var(--fluent-spacing-xs);">Zapamiętaj mnie</label>
             </div>
 
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             
-            <fluent-button type="submit" 
-                           appearance="accent" 
-                           style="width: 100%; justify-content: center; margin-top: var(--fluent-spacing-l);">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+            <button type="submit" 
+                    class="fluent-button-primary"
+                    style="width: 100%; justify-content: center; margin-top: var(--fluent-spacing-l); padding: var(--fluent-spacing-s) var(--fluent-spacing-l); display: flex; align-items: center; gap: var(--fluent-spacing-s); cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M7 2v2H3v8h4v2H1V2h6zm2 3l5 5-5 5v-3H5V8h4V5z"/>
                 </svg>
                 Zaloguj się
-            </fluent-button>
+            </button>
         </form>
         
         <div style="text-align: center; margin-top: var(--fluent-spacing-xxl); padding-top: var(--fluent-spacing-l); border-top: 1px solid var(--fluent-neutral-stroke-1);">

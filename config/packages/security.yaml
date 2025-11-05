@@ -21,15 +21,17 @@ security:
 
         # Main firewall - handles authentication
         main:
-            lazy: true
+            pattern: ^/
+            lazy: false
             provider: app_user_provider
+            stateless: false
             
             # Login form configuration
             form_login:
                 login_path: auth_login
-                check_path: auth_login
+                check_path: /login
                 enable_csrf: false
-                default_target_path: leads_index
+                default_target_path: leads_list
                 always_use_default_target_path: true
                 username_parameter: _username
                 password_parameter: _password
@@ -47,14 +49,23 @@ security:
                 path: auth_logout
                 target: auth_login
                 invalidate_session: true
+                delete_cookies:
+                    REMEMBERME: { path: / }
                 
             # Entry point - where to redirect unauthenticated users
             entry_point: form_login
 
     # Access control rules
+    # Order matters! More specific rules first, then general ones
     access_control:
-        # Public routes (login only)
-        - { path: ^/login, roles: PUBLIC_ACCESS }
+        # Public routes (login only - both GET and POST)
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
+        
+        # API routes - publicznie dostępne w MVP (tokeny w przyszłości)
+        - { path: ^/api, roles: PUBLIC_ACCESS }
+        
+        # Admin routes - require ROLE_ADMIN
+        - { path: ^/config, roles: ROLE_ADMIN }
         
         # Authenticated routes - require at least ROLE_USER
         - { path: ^/profile, roles: ROLE_USER }
@@ -63,11 +74,8 @@ security:
         - { path: ^/events, roles: ROLE_USER }
         - { path: ^/failed-deliveries, roles: ROLE_USER }
         
-        # Admin routes - require ROLE_ADMIN
-        - { path: ^/config, roles: ROLE_ADMIN }
-        
-        # API routes - publicznie dostępne w MVP (tokeny w przyszłości)
-        - { path: ^/api, roles: PUBLIC_ACCESS }
+        # Default: all other routes require authentication (including root /)
+        - { path: ^/, roles: ROLE_USER }
 
     # Role hierarchy
     role_hierarchy:

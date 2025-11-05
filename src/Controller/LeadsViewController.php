@@ -13,15 +13,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-// use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Leads View Controller
  * Handles lead list display and filtering for the dashboard
- * 
- * TODO: Re-enable authentication when auth system is implemented
  */
-// #[IsGranted('ROLE_USER')]
+#[IsGranted('ROLE_USER')]
 class LeadsViewController extends AbstractController
 {
     public function __construct(
@@ -37,10 +35,13 @@ class LeadsViewController extends AbstractController
      * @param Request $request
      * @return Response
      */
-    #[Route('/', name: 'leads_index', methods: ['GET'])]
+    #[Route('/leads', name: 'leads_index', methods: ['GET'])]
     #[Route('/leads', name: 'leads_list', methods: ['GET'])]
     public function index(Request $request): Response
     {
+        // Security check - should be handled by #[IsGranted] but double check
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
         try {
             // Parse filters from query params
             $filters = FiltersDto::fromRequest($request);
