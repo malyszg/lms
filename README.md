@@ -55,7 +55,7 @@ The system eliminates the need for call center agents to log into multiple syste
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/malyszg/lms.git
    cd lms
    ```
 
@@ -65,23 +65,16 @@ The system eliminates the need for call center agents to log into multiple syste
    # Edit .env with your configuration (optional for local dev)
    ```
 
-3. **Start Docker containers**
+3. **Run the project**
    ```bash
-   cd docker
-   docker-compose up -d
+   ./docker/run.sh
    ```
+   This script automatically handles:
+   - Starting Docker containers
+   - Installing dependencies
+   - Running database migrations
 
-4. **Install dependencies**
-   ```bash
-   docker exec lms_app composer install
-   ```
-
-5. **Run database migrations**
-   ```bash
-   docker exec lms_app php bin/console doctrine:migrations:migrate --no-interaction
-   ```
-
-6. **Access the application**
+4. **Access the application**
    - 🌐 **Frontend**: http://localhost:8082
    - 🗄️ **phpMyAdmin**: http://localhost:8081 (Check your .env file for credentials)
    - 🐰 **RabbitMQ Management**: http://localhost:15672 (Check your .env file for credentials)
@@ -118,36 +111,6 @@ docker-compose down
 - MySQL 9.4
 - Composer
 - RabbitMQ server
-
-### Installation
-
-1. **Clone and install**
-   ```bash
-   git clone <repository-url>
-   cd lms
-   composer install
-   cp env.example .env
-   ```
-
-2. **Configure `.env` file**
-   ```env
-   DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@localhost:3306/lms_db
-   RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@localhost:5672
-   API_BASE_URL=http://localhost:8000
-   ```
-
-3. **Set up database**
-   ```bash
-   php bin/console doctrine:database:create
-   php bin/console doctrine:migrations:migrate
-   ```
-
-4. **Start the server**
-   ```bash
-   symfony server:start
-   # or
-   php -S localhost:8000 -t public/
-   ```
 
 ## 📚 Documentation
 
